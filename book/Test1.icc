@@ -1,0 +1,7 @@
+Test1
+: Π(P: !Bool -> *)
+  Π(t: (P true))
+  Π(f: (P false))
+  (P true)
+= λP λt λf
+  t

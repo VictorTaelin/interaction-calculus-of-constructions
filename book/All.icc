@@ -1,0 +1,2 @@
+// Dependent Function. Syntax: Π(x: A) B[x]
+All = λA λB θf λx {(f {x: A}): (B x)}

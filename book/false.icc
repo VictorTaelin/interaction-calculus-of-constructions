@@ -1,0 +1,3 @@
+false
+: Bool
+= λP λt λf f

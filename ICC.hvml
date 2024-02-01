@@ -10,6 +10,7 @@ data Term
   | (Bri bod)
   | (Ann val typ)
   | (Var idx)
+  | (Ref uid exp)
 
 // Interactions
 // ------------
@@ -17,12 +18,14 @@ data Term
 (APP fun arg) = match fun = (Reduce fun) {
   Lam: (Reduce (fun.bod arg))
   Bri: (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
+  Ref: (APP fun.exp arg)
   var: (App var arg)
 }
 
 (ANN val typ) = match typ = (Reduce typ) {
   Lam: (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
   Bri: (Reduce (typ.bod val))
+  Ref: (ANN val typ.exp)
   var: (Ann val var)
 }
 
@@ -35,47 +38,77 @@ data Term
   val: val
 }
 
-(Normal term dep) = match term {
+(Expand term) = match term = (Reduce term) {
+  Ref: (Expand term.exp)
+  val: val
+}
+
+(Normal term dep) = match term = (Reduce term) {
   Lam: (Lam λx(Normal (term.bod (Var dep)) (+ dep 1)))
   App: (APP (Normal term.fun dep) (Normal term.arg dep))
   Bri: (Bri λx(Normal (term.bod (Var dep)) (+ dep 1)))
   Ann: (ANN (Normal term.val dep) (Normal term.typ dep))
+  Ref: (Normal term.exp dep)
   Var: (Var term.idx)
 }
 
 // Equality
 // --------
 
-(Equal a b dep) = (Compare (Reduce a) (Reduce b) dep)
+(Equal a b dep) = match (Compare a b dep) {
+  +: 1
+  0: (Compare (Expand a) (Expand b) dep)
+}
 
 (Compare (Lam a.bod)       (Lam b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
 (Compare (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
 (Compare (Bri a.bod)       (Bri b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
 (Compare (Ann a.val a.typ) b                 dep) = (Equal a.val b dep)
 (Compare a                 (Ann b.val b.typ) dep) = (Equal a b.val dep)
+(Compare (Ref a.uid a.exp) (Ref b.uid b.exp) dep) = (== a.uid b.uid)
 (Compare (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
 (Compare a                 b                 dep) = 0
 
 // Checking
 // --------
 
-(Check term type dep) = match type = (Reduce type) {
-  Bri: (Infer (type.bod term) dep)
-  val: match x = (Reduce term) {
-    Ann: match eq = (Equal x.typ type 0 dep) {
-      0: (x.typ, type)
-      +: (Infer x.val dep)
-    }
-    var: var
-  }
-}
+data Maybe
+  = None
+  | (Some value)
+
+(Group (Some val) b) = #err{val b}
+(Group None       b) = b
 
 (Infer term dep) = match term {
   Lam: (Infer (term.bod (Var dep)) (+ 1 dep))
-  App: (& (Infer term.fun dep) (Infer term.arg dep))
-  Bri: 0
+  App: (Group (Infer term.fun dep) (Infer term.arg dep))
+  Bri: (Infer (term.bod (Var dep)) (+ 1 dep))
   Ann: (Check term.val term.typ dep)
-  var: 1
+  Ref: None
+  Var: None
+}
+
+(Check term type dep) = match type = (Reduce type) {
+  Bri: (Infer (type.bod term) dep)
+  Ann: (Check term type.val dep)
+  val: match x = (Expand term) {
+    Ann: match eq = (Equal x.typ type dep) {
+      0: (Some (Join ["Mismatch: " (Show type dep) " != " (Show x.typ dep)]))
+      +: (Infer x.val dep)
+    }
+    Lam: (Some "bad")
+    exp: None
+    //exp: λt(t (Show exp dep) (Show type dep))
+  }
+}
+
+(AnnCheck term) = match term {
+  Ann: match error = (Check term.val (Expand term.typ) 0) {
+    None: "check!"
+    Some: error.value
+  }
+  Ref: (AnnCheck term.exp)
+  exp: "untyped"
 }
 
 // Stringification
@@ -98,7 +131,8 @@ data Term
   App: (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
   Bri: (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
   Ann: (Join ["{" (Show term.val dep) " : " (Show term.typ dep) "}"])
-  Var: match k=(== term.idx (- 0 1)) { 0: (Join ["x" (U60.show term.idx)]); +: "*" }
+  Var: match (== term.idx (- 0 1)) { 0: (Join ["x" (U60.show term.idx)]); +: "*" }
+  Ref: (NameOf term.uid)
 }
 
 // TODO: optimize Show and remove this
@@ -108,71 +142,34 @@ data Term
   Bri: (Bri λx(Quote (term.bod (Var dep)) (+ dep 1)))
   Ann: (Ann (Quote term.val dep) (Quote term.typ dep))
   Var: (Var term.idx)
+  Ref: (Ref term.uid term.exp)
 }
 
-// Encodings
-// ---------
-
-// Set ::= free-var
-Set = (Var (- 0 1))
-
-// Any ::= θv v
-Any = (Bri λx(x))
-
-// (A -> B) ::= θf λx {(f {x: A}): B}
-(Arr A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) B)))
-
-// (Π(x: A). B[x]) ::= θf λx {(f {x: A}): (B x)}
-(All A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) (B x))))
-
-// (Πf(x: A). B[x]) ::= θf λx {(f {x: A}): (B x f)}
-(Ind A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) (B f x))))
-
-// Tests
+// Utils
 // -----
 
-// μNat. ∀(P: *) (Nat -> P) -> P -> P
-Nat = (All Any λP(All (Arr (App Any Any) P) λt (All P λf(P))))
+(NameOf uid) = (Get uid Names)
 
-// ...
-zero = (Lam λP(Lam λs(Lam λz(z))))
+(Get n list) = match n {
+  0: match list {
+    LNil: 0
+    LCons: list.head
+  }
+  +: match list {
+    LNil: 0
+    LCons: (Get n-1 list.tail)
+  }
+}
 
-// ...
-succ = (Lam λn(Lam λP(Lam λs(Lam λz(App s n)))))
+// Terms
+// -----
 
-// ∀(P: *) ∀(t: P) ∀(f: P) P
-Bool = (All Set λP(All P λt (All P λf(P))))
+Set = (Var (- 0 1))
 
-// λP λt λf t
-true = (Lam λP(Lam λt(Lam λf(t))))
+//Names = []
 
-// λP λt λf f
-false = (Lam λP(Lam λt(Lam λf(f))))
+//T = (Ref 0 (Lam λt (Lam λf t)))
+//F = (Ref 1 (Lam λt (Lam λf f)))
 
-// λb (b false true)
-//not = (Lam λb(App (App (App b Bool) false) true))
-not = (Lam λb(Lam λP(Lam λt(Lam λf(App (App (App b P) f) t)))))
+//Main = (Equal (App (Var 0) (Lam λt (Lam λf t))) (App (Var 0) T) 0 0)
 
-// λP λs λz z
-zero = (Lam λP(Lam λs(Lam λz(z))))
-
-// λP λs λz (s λP λs λz (z))
-one = (Lam λP(Lam λs(Lam λz(App s (Lam λP(Lam λs(Lam λz(z))))))))
-
-// λn λP λs λz (s n)
-succ = (Lam λn(Lam λP(Lam λs(Lam λz(App s n)))))
-
-// ∀(P: *) ∀(x: P) P
-Unit = (All Set λP(All P λu(P)))
-
-// λP λx x
-unit = (Lam λP(Lam λx(x)))
-
-// ∀(A: *) ∀(B: *) ∀(A -> B) ∀(B -> A) ∀A A
-Test = (All Set λA(All Set λB(Arr (Arr A B) (Arr (Arr B A) (Arr A A)))))
-
-// λA λB λab λba λa a
-test = (Lam λA(Lam λB(Lam λab(Lam λba(Lam λa(App ba (App ab a))))))) 
-
-// Main
-Main = (Show (Check (Lam λx(x)) (Arr Bool Bool) 0) 0)

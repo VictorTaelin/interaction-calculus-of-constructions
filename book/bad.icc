@@ -1,0 +1,11 @@
+Bit
+= Π(P:*)Π(t:P)Π(f:P)P
+
+bad
+: Π(b: Bit)
+  Π(P: !Bit -> *)
+  Π(t: P)
+  Π(f: P)
+  P
+= λb λP λt λf
+  b

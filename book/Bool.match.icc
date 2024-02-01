@@ -1,0 +1,8 @@
+Bool.match
+: Π(b: Bool)
+  Π(P: !Bool -> *)
+  Π(t: true)
+  Π(f: false)
+  (P b)
+= λb λP λt λf
+  (b P t f)

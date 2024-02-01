@@ -1,0 +1,2 @@
+// Simple Function. Syntax: !A -> B
+Fun = λA λB θf λx {(f {x: A}): B}

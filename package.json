@@ -1,0 +1,22 @@
+{
+  "name": "ICC",
+  "version": "0.1.0",
+  "description": "Interaction Calculus of Constructions",
+  "main": "main.ts",
+  "bin": {
+    "icc": "./main.ts"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/victortaelin/interaction-calculus-of-constructions.git"
+  },
+  "author": "VictorTaelin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/victortaelin/interaction-calculus-of-constructions/issues"
+  },
+  "homepage": "https://github.com/victortaelin/interaction-calculus-of-constructions#readme"
+}
