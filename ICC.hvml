@@ -1,0 +1,178 @@
+// Interaction Calculus of Constructions
+// =====================================
+
+// Type
+// ----
+
+data Term
+  = (Lam bod)
+  | (App fun arg)
+  | (Bri bod)
+  | (Ann val typ)
+  | (Var idx)
+
+// Interactions
+// ------------
+
+(APP fun arg) = match fun = (Reduce fun) {
+  Lam: (Reduce (fun.bod arg))
+  Bri: (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
+  var: (App var arg)
+}
+
+(ANN val typ) = match typ = (Reduce typ) {
+  Lam: (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
+  Bri: (Reduce (typ.bod val))
+  var: (Ann val var)
+}
+
+// Evaluation
+// ----------
+
+(Reduce term) = match term {
+  App: (APP term.fun term.arg)
+  Ann: (ANN term.val term.typ)
+  val: val
+}
+
+(Normal term dep) = match term {
+  Lam: (Lam λx(Normal (term.bod (Var dep)) (+ dep 1)))
+  App: (APP (Normal term.fun dep) (Normal term.arg dep))
+  Bri: (Bri λx(Normal (term.bod (Var dep)) (+ dep 1)))
+  Ann: (ANN (Normal term.val dep) (Normal term.typ dep))
+  Var: (Var term.idx)
+}
+
+// Equality
+// --------
+
+(Equal a b dep) = (Compare (Reduce a) (Reduce b) dep)
+
+(Compare (Lam a.bod)       (Lam b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
+(Compare (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
+(Compare (Bri a.bod)       (Bri b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
+(Compare (Ann a.val a.typ) b                 dep) = (Equal a.val b dep)
+(Compare a                 (Ann b.val b.typ) dep) = (Equal a b.val dep)
+(Compare (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
+(Compare a                 b                 dep) = 0
+
+// Checking
+// --------
+
+(Check term type dep) = match type = (Reduce type) {
+  Bri: (Infer (type.bod term) dep)
+  val: match x = (Reduce term) {
+    Ann: match eq = (Equal x.typ type 0 dep) {
+      0: (x.typ, type)
+      +: (Infer x.val dep)
+    }
+    var: var
+  }
+}
+
+(Infer term dep) = match term {
+  Lam: (Infer (term.bod (Var dep)) (+ 1 dep))
+  App: (& (Infer term.fun dep) (Infer term.arg dep))
+  Bri: 0
+  Ann: (Check term.val term.typ dep)
+  var: 1
+}
+
+// Stringification
+// ---------------
+
+(Concat SNil         ys) = ys
+(Concat (SCons x xs) ys) = (SCons x (Concat xs ys))
+
+(Join LNil)         = ""
+(Join (LCons x xs)) = (Concat x (Join xs))
+
+(U60.show n) = (U60.show.go n SNil)
+(U60.show.go n res) = match k = (< n 10) {
+  0: (U60.show.go (/ n 10) (SCons (+ '0' (% n 10)) res))
+  +: (SCons (+ '0' n) res)
+}
+
+(Show term dep) = match term {
+  Lam: (Join ["λx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+  App: (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
+  Bri: (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+  Ann: (Join ["{" (Show term.val dep) " : " (Show term.typ dep) "}"])
+  Var: match k=(== term.idx (- 0 1)) { 0: (Join ["x" (U60.show term.idx)]); +: "*" }
+}
+
+// TODO: optimize Show and remove this
+(Quote term dep) = match term {
+  Lam: (Lam λx(Quote (term.bod (Var dep)) (+ dep 1)))
+  App: (App (Quote term.fun dep) (Quote term.arg dep))
+  Bri: (Bri λx(Quote (term.bod (Var dep)) (+ dep 1)))
+  Ann: (Ann (Quote term.val dep) (Quote term.typ dep))
+  Var: (Var term.idx)
+}
+
+// Encodings
+// ---------
+
+// Set ::= free-var
+Set = (Var (- 0 1))
+
+// Any ::= θv v
+Any = (Bri λx(x))
+
+// (A -> B) ::= θf λx {(f {x: A}): B}
+(Arr A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) B)))
+
+// (Π(x: A). B[x]) ::= θf λx {(f {x: A}): (B x)}
+(All A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) (B x))))
+
+// (Πf(x: A). B[x]) ::= θf λx {(f {x: A}): (B x f)}
+(Ind A B) = (Bri λf(Lam λx(Ann (App f (Ann x A)) (B f x))))
+
+// Tests
+// -----
+
+// μNat. ∀(P: *) (Nat -> P) -> P -> P
+Nat = (All Any λP(All (Arr (App Any Any) P) λt (All P λf(P))))
+
+// ...
+zero = (Lam λP(Lam λs(Lam λz(z))))
+
+// ...
+succ = (Lam λn(Lam λP(Lam λs(Lam λz(App s n)))))
+
+// ∀(P: *) ∀(t: P) ∀(f: P) P
+Bool = (All Set λP(All P λt (All P λf(P))))
+
+// λP λt λf t
+true = (Lam λP(Lam λt(Lam λf(t))))
+
+// λP λt λf f
+false = (Lam λP(Lam λt(Lam λf(f))))
+
+// λb (b false true)
+//not = (Lam λb(App (App (App b Bool) false) true))
+not = (Lam λb(Lam λP(Lam λt(Lam λf(App (App (App b P) f) t)))))
+
+// λP λs λz z
+zero = (Lam λP(Lam λs(Lam λz(z))))
+
+// λP λs λz (s λP λs λz (z))
+one = (Lam λP(Lam λs(Lam λz(App s (Lam λP(Lam λs(Lam λz(z))))))))
+
+// λn λP λs λz (s n)
+succ = (Lam λn(Lam λP(Lam λs(Lam λz(App s n)))))
+
+// ∀(P: *) ∀(x: P) P
+Unit = (All Set λP(All P λu(P)))
+
+// λP λx x
+unit = (Lam λP(Lam λx(x)))
+
+// ∀(A: *) ∀(B: *) ∀(A -> B) ∀(B -> A) ∀A A
+Test = (All Set λA(All Set λB(Arr (Arr A B) (Arr (Arr B A) (Arr A A)))))
+
+// λA λB λab λba λa a
+test = (Lam λA(Lam λB(Lam λab(Lam λba(Lam λa(App ba (App ab a))))))) 
+
+// Main
+Main = (Show (Check (Lam λx(x)) (Arr Bool Bool) 0) 0)
