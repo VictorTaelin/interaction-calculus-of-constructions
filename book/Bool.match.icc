@@ -1,8 +1,8 @@
 Bool.match
 : Π(b: Bool)
-  Π(P: !Bool -> *)
-  Π(t: true)
-  Π(f: false)
+  Π(P: !Bool -> Any)
+  Π(t: (P true))
+  Π(f: (P false))
   (P b)
 = λb λP λt λf
-  (b P t f)
+  t

@@ -77,7 +77,7 @@ export const compile = (term: Term, dep: number = 0): string => {
     case "App": return `(App ${compile(term.fun, dep)} ${compile(term.arg, dep)})`;
     case "Bri": return `(Bri λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
     case "Ann": return `(Ann ${compile(term.val, dep)} ${compile(term.typ, dep)})`;
-    case "Var": return term.nam === -1 ? "Set" : name(term.nam);
+    case "Var": return name(term.nam);
     case "Ref": return term.nam;
   }
 };
@@ -178,9 +178,9 @@ export function parse_term(code: string): [string, (ctx: Scope) => Term] {
     var [code, _  ] = parse_text(code, "}");
     return [code, ctx => Ann(val(ctx), typ(ctx))];
   }
-  // SET: `*`
+  // ANY: `*`
   if (code[0] === "*") {
-    return [code.slice(1), ctx => Var(-1)];
+    return [code.slice(1), ctx => Ref("Any")];
   }
   // FUN: `!A -> B` -SUGAR
   if (code[0] === "!") {
@@ -303,8 +303,18 @@ export function main() {
   // Saves locally.
   fs.writeFileSync("./.checker.hvml", checker_hvml);
 
-  // Runs 'hvml checker.hvml -w -s -L -1'
-  execSync("hvml run .checker.hvml -w -s -L -1", { stdio: "inherit" });
+  // Runs 'hvml checker.hvml -s -L -1'
+  const output = execSync("hvml run .checker.hvml -L -1").toString();
+  try {
+    var [logs, check] = JSON.parse(output.slice(output.indexOf("[[")));
+    logs.reverse();
+    for (var log of logs) {
+      console.log(log);
+    }
+    console.log(check ? "Check!" : "Error.");
+  } catch (e) {
+    console.log(output);
+  }
 
 };
 

@@ -9,4 +9,4 @@ Test0
   Π(b: B)
   A
 = λA λB λaa λab λba λbb λa λb
-  (ba (ab a))
+  (ba (ab (aa (aa a))))
