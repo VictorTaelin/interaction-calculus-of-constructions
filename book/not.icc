@@ -1,0 +1,3 @@
+not
+: !Bool -> Bool
+= λb (b λp(Bool) false true)

@@ -1,0 +1,2 @@
+// Dependent Pair. Syntax: Σ(x: A) B[x]
+Sig = λA λB θp (p λfstλsndλp(p {fst: A} {snd: (B fst)}))

@@ -1,5 +1,5 @@
 Bool
-: Any
+: *
 = $self(P: !Bool -> *)
   Π(t: (P true))
   Π(f: (P false))

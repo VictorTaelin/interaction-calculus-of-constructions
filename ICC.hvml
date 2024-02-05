@@ -17,13 +17,13 @@ data Term
 
 (APP fun arg) = match fun = (Reduce fun) {
   Lam: (Reduce (fun.bod arg))
-  Bri: (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
+  Bri: (Bri λx(App (fun.bod (Lam λ$k(x))) (Ann $k arg)))
   Ref: (APP fun.exp arg)
   var: (App var arg)
 }
 
 (ANN val typ) = match typ = (Reduce typ) {
-  Lam: (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
+  Lam: (Lam λx(Ann (App val $k) (typ.bod (Bri λ$k(x)))))
   Bri: (Reduce (typ.bod val))
   Ref: (ANN val typ.exp)
   var: (Ann val var)
@@ -56,28 +56,17 @@ data Term
 // -------
 
 // type Program r = ∀(logs: [String]) ([String], r)
-
-(pure x) = λlogs
-  (logs, x)
-
-(bind a b) = λlogs
-  let (a_logs, a_result) = (a logs)
-  (b a_result a_logs)
-
-(log msg) = λlogs
-  ((LCons msg logs), 0)
-
-(run a) = (a [])
+(pure x)   = λlogs (logs, x)
+(bind a b) = λlogs let (a_logs, a_result) = (a logs); (b a_result a_logs)
+(log msg)  = λlogs ((LCons msg logs), 0)
+(run a)    = (a [])
 
 // Equality
 // --------
 
-(Equal a b dep) = match (Compare a b dep) {
-  +: 1
-  0: 0 //(Compare (Expand a) (Expand b) dep)
-}
+//(Equal a b dep) = match (Compare a b dep) { +: 1; 0: 0 (Compare (Expand a) (Expand b) dep) }
 
-(Compare a b dep) = match a {
+(Equal a b dep) = match a {
   Lam: match b {
     Lam: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
     Ann: (Equal (Lam a.bod) b.val dep)
@@ -156,9 +145,7 @@ data Maybe
   })
 
 (Chk term) = match term {
-  Ann: 
-    let (logs, result) = (run (Check term.val (Expand term.typ) 0))
-    [logs, result]
+  Ann: let (logs, result) = (run (Check term.val (Expand term.typ) 0)); [logs, result]
   Ref: (Chk term.exp)
   exp: "untyped"
 }

@@ -1,0 +1,7 @@
+// Leibniz Equality
+Equal
+: Π(A: *) Π(a: A) Π(b: A) *
+= λA λa λb
+  Π(P: Π(x: A) *)
+  Π(x: (P a))
+  (P b)

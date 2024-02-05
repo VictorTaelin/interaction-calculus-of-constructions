@@ -1,0 +1,6 @@
+refl
+: Π(A: *) Π(a: A) (Equal A a a)
+= λA λa
+  λP λx x
+  
+

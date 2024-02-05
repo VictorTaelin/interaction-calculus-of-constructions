@@ -1,8 +1,0 @@
-bad2
-: Π(b: Bit)
-  Π(P: !Bit -> *)
-  Π(t: true)
-  Π(f: false)
-  (P b)
-= λb λP λt λf
-  (b P t f)

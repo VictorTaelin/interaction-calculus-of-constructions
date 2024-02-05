@@ -1,0 +1,8 @@
+New
+: Π(A: *)
+  Π(B: Π(a: A) *)
+  Π(a: A)
+  Π(b: (B a))
+  (Sig A B)
+= λA λB λa λb
+  λp (p a b)

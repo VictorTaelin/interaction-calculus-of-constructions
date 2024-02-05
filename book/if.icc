@@ -1,6 +1,6 @@
-Bool.match
+if
 : Π(b: Bool)
-  Π(P: !Bool -> Any)
+  Π(P: !Bool -> *)
   Π(t: (P true))
   Π(f: (P false))
   (P b)
