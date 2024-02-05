@@ -1,2 +1,2 @@
-// Inductive Function. Syntax: $s(x: A) B[s,x]
+// Inductive Function. Syntax: $f(x: A) B[f,x]
 Ind = λA λB θf λx {(f {x: A}): (B f x)}

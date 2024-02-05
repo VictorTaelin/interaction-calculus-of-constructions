@@ -78,7 +78,7 @@ export const compile = (term: Term, dep: number = 0): string => {
     case "Bri": return `(Bri λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
     case "Ann": return `(Ann ${compile(term.val, dep)} ${compile(term.typ, dep)})`;
     case "Var": return name(term.nam);
-    case "Ref": return term.nam;
+    case "Ref": return "_"+term.nam;
   }
 };
 
@@ -273,7 +273,7 @@ export function main() {
   var book_hvml = "Names = [" + Object.keys(book).map(x => '"'+x+'"').join(",") + "]\n";
   var ref_count = 0;
   for (let name in book) {
-    book_hvml += name + " = (Ref " + (ref_count++) + ' ' + compile(book[name]) + ")\n";
+    book_hvml += "_" + name + " = (Ref " + (ref_count++) + ' ' + compile(book[name]) + ")\n";
   }
 
   // Gets arguments.
@@ -285,11 +285,12 @@ export function main() {
   var main_hvml = "";
   switch (func) {
     case "check": {
-      main_hvml = "Main = (AnnCheck " + name + ")\n";
+      main_hvml = "Main = (Chk _" + name + ")\n";
       break;
     }
     case "run": {
-      main_hvml = "Main = (Run " + name + ")\n";
+      console.log("oxi");
+      main_hvml = "Main = (Run _" + name + ")\n";
       break;
     }
     default: {
@@ -304,14 +305,18 @@ export function main() {
   fs.writeFileSync("./.checker.hvml", checker_hvml);
 
   // Runs 'hvml checker.hvml -s -L -1'
-  const output = execSync("hvml run .checker.hvml -L -1").toString();
+  const output = execSync("hvml run .checker.hvml -s -L -1").toString();
   try {
-    var [logs, check] = JSON.parse(output.slice(output.indexOf("[[")));
+    var check_text = output.slice(output.indexOf("[["), output.indexOf("RWTS")).trim();
+    var stats_text = output.slice(output.indexOf("RWTS"));
+    var [logs, check] = JSON.parse(check_text);
     logs.reverse();
     for (var log of logs) {
       console.log(log);
     }
     console.log(check ? "Check!" : "Error.");
+    console.log("");
+    console.log(stats_text);
   } catch (e) {
     console.log(output);
   }

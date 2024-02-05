@@ -45,10 +45,10 @@ data Term
 
 (Normal term dep) = match term = (Reduce term) {
   Lam: (Lam λx(Normal (term.bod (Var dep)) (+ dep 1)))
-  App: (APP (Normal term.fun dep) (Normal term.arg dep))
+  App: (App (Normal term.fun dep) (Normal term.arg dep))
   Bri: (Bri λx(Normal (term.bod (Var dep)) (+ dep 1)))
-  Ann: (ANN (Normal term.val dep) (Normal term.typ dep))
-  Ref: (Normal term.exp dep)
+  Ann: (Ann (Normal term.val dep) (Normal term.typ dep))
+  Ref: (Ref term.uid term.exp dep)
   Var: (Var term.idx)
 }
 
@@ -72,19 +72,35 @@ data Term
 // Equality
 // --------
 
-(Equal a b dep) = match (Compare a b dep) {
-  +: 1
-  0: (Compare (Expand a) (Expand b) dep)
+(Equal a b dep) = match a {
+  Lam: match b {
+    Lam: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
+    Ann: (Equal (Lam a.bod) b.val dep)
+    exp: 0
+  }
+  App: match b {
+    App: (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
+    Ann: (Equal (App a.fun a.arg) b.val dep)
+    exp: 0
+  }
+  Bri: match b {
+    Bri: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
+    Ann: (Equal (Bri a.bod) b.val dep)
+    exp: 0
+  }
+  Ann: (Equal a.val b dep)
+  Ref: match b {
+    Ref: (== a.uid b.uid)
+    Ann: (Equal (Ref a.uid a.exp) b.val dep)
+    exp: 0
+  }
+  Var: match b {
+    Var: (== a.idx b.idx)
+    Ann: (Equal (Var a.idx) b.val dep)
+    exp: 0
+  }
+  exp: 0
 }
-
-(Compare (Lam a.bod)       (Lam b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
-(Compare (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
-(Compare (Bri a.bod)       (Bri b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
-(Compare (Ann a.val a.typ) b                 dep) = (Equal a.val b dep)
-(Compare a                 (Ann b.val b.typ) dep) = (Equal a b.val dep)
-(Compare (Ref a.uid a.exp) (Ref b.uid b.exp) dep) = (== a.uid b.uid)
-(Compare (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
-(Compare a                 b                 dep) = 0
 
 // Checking
 // --------
@@ -93,14 +109,16 @@ data Maybe
   = None
   | (Some value)
 
-(Group (Some val) b) = #err{val b}
-(Group None       b) = b
-
 (Infer term dep) = 
-  (bind (log (Join ["Infer: " (Show term dep)])) λx
+  //let term = (Reduce term)
+  (bind (log (Join ["Infer: " (U60.show dep) " " (Show term dep)])) λx
   match term {
     Lam: (Infer (term.bod (Var dep)) (+ 1 dep))
-    App: (bind (Infer term.fun dep) λfun (bind (Infer term.arg dep) λarg (pure (& fun arg))))
+    App: match term = (APP term.fun term.arg) {
+      App: (bind (Infer term.fun dep) λfun (bind (Infer term.arg dep) λarg (pure (& fun arg))))
+      exp: (Infer exp dep)
+    }
+    //App: (pure 1)
     Bri: (Infer (term.bod (Var dep)) (+ 1 dep))
     Ann: (Check term.val term.typ dep)
     Ref: (pure 1)
@@ -109,29 +127,36 @@ data Maybe
 
 (Check term type dep) =
   let type = (Reduce type)
-  (bind (log (Join ["Check: " (Show term dep) " :: " (Show type dep)])) λx
+  (bind (log (Join ["Check: " (U60.show dep) " " (Show term dep) " :: " (Show type dep)])) λx
   match type {
     Bri: (Infer (type.bod term) dep)
-    Ann: (Check term type.val dep)
-    typ:
-      let term = (Expand term)
-      (bind (log (Join ["Again: " (Show term dep) " :: " (Show type dep)])) λx
-      match term {
-        Ann: match eq = (Equal term.typ type dep) {
-          0: (bind (log (Join ["Mismatch: " (Show type dep) " != " (Show term.typ dep)])) λx(pure 0))
-          +: (Infer term.val dep)
-        }
-        Lam: (bind (log (Join ["NonFunLam: " (Show (Lam term.bod) dep) " :: " (Show typ dep)])) λx(pure 0))
-        exp: (pure 1)
-      })
+    Ann: (bind (Infer type.typ dep) λtyp (bind (Check term type.val dep) λval (pure (& typ val))))
+    typ: match term {
+      Ann: match (Equal term.typ type dep) {
+        0: (bind (log (Join ["Mismatch: " (Show type dep) " != " (Show term.typ dep)])) λx(pure 0))
+        +: (Infer term.val dep)
+      }
+      App: match term = (APP term.fun term.arg) {
+        App: (bind (Infer term.fun dep) λfun (bind (Infer term.arg dep) λarg (pure (& fun arg))))
+        exp: (Check exp type dep)
+      }
+      Lam: (bind (log (Join ["NonFunLam: " (U60.show dep) " " (Show (Lam term.bod) dep) " :: " (Show typ dep)])) λx(pure 0))
+      exp: (pure 1)
+    }
   })
 
-(AnnCheck term) = match term {
+(Chk term) = match term {
   Ann: 
     let (logs, result) = (run (Check term.val (Expand term.typ) 0))
     [logs, result]
-  Ref: (AnnCheck term.exp)
+  Ref: (Chk term.exp)
   exp: "untyped"
+}
+
+(Run term) = match term {
+  Ann: (Run term.val)
+  Ref: (Run term.exp)
+  exp: (Show (Normal term 0) 0)
 }
 
 // Stringification

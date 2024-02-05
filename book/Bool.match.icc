@@ -5,4 +5,4 @@ Bool.match
   Π(f: (P false))
   (P b)
 = λb λP λt λf
-  t
+  (b P t f)
