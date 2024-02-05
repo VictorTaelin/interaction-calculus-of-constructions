@@ -19,14 +19,14 @@ data Term
   Lam: (Reduce (fun.bod arg))
   Bri: (Bri λx(App (fun.bod (Lam λ$k(x))) (Ann $k arg)))
   Ref: (APP fun.exp arg)
-  var: (App var arg)
+  exp: (App exp arg)
 }
 
 (ANN val typ) = match typ = (Reduce typ) {
   Lam: (Lam λx(Ann (App val $k) (typ.bod (Bri λ$k(x)))))
   Bri: (Reduce (typ.bod val))
   Ref: (ANN val typ.exp)
-  var: (Ann val var)
+  exp: (Ann val exp)
 }
 
 // Evaluation
@@ -52,52 +52,50 @@ data Term
   Var: (Var term.idx)
 }
 
-// Program
-// -------
-
-// type Program r = ∀(logs: [String]) ([String], r)
-(pure x)   = λlogs (logs, x)
-(bind a b) = λlogs let (a_logs, a_result) = (a logs); (b a_result a_logs)
-(log msg)  = λlogs ((LCons msg logs), 0)
-(run a)    = (a [])
-
 // Equality
 // --------
 
-//(Equal a b dep) = match (Compare a b dep) { +: 1; 0: 0 (Compare (Expand a) (Expand b) dep) }
+// This linear equality attempts to avoid reducing the term to normal form, and
+// cloning it, while still being able to identify as many terms as possible.
 
 (Equal a b dep) = match a {
   Lam: match b {
     Lam: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
     Ann: (Equal (Lam a.bod) b.val dep)
     Ref: (Equal (Lam a.bod) b.exp dep)
+    App: (Equal (App b.fun b.arg) (Lam a.bod) dep)
     exp: 0
   }
-  App: match b {
-    App: (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
-    Ann: (Equal (App a.fun a.arg) b.val dep)
-    Ref: (Equal (App a.fun a.arg) b.exp dep)
-    exp: 0
+  App: match a = (APP a.fun a.arg) {
+    App: match b {
+      App: (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
+      Ann: (Equal (App a.fun a.arg) b.val dep)
+      Ref: (Equal (App a.fun a.arg) b.exp dep)
+      exp: 0
+    }
+    exp: (Equal exp b dep)
   }
   Bri: match b {
     Bri: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
     Ann: (Equal (Bri a.bod) b.val dep)
     Ref: (Equal (Bri a.bod) b.exp dep)
+    App: (Equal (App b.fun b.arg) (Bri a.bod) dep)
     exp: 0
   }
   Ann: (Equal a.val b dep)
   Ref: match b {
     Ref: (== a.uid b.uid)
     Ann: (Equal (Ref a.uid a.exp) b.val dep)
+    App: (Equal (App b.fun b.arg) (Ref a.uid a.exp) dep)
     exp: (Equal a.exp exp dep)
   }
   Var: match b {
     Var: (== a.idx b.idx)
     Ann: (Equal (Var a.idx) b.val dep)
     Ref: (Equal (Var a.idx) b.exp dep)
+    App: (Equal (App b.fun b.arg) (Var a.idx) dep)
     exp: 0
   }
-  exp: 0
 }
 
 // Checking
@@ -108,7 +106,6 @@ data Maybe
   | (Some value)
 
 (Valid term dep) = 
-  //let term = (Reduce term)
   (bind (log (Join ["Valid: " (U60.show dep) " " (Show term dep)])) λx
   match term {
     Lam: (Valid (term.bod (Var dep)) (+ 1 dep))
@@ -116,7 +113,6 @@ data Maybe
       App: (bind (Valid term.fun dep) λfun (bind (Valid term.arg dep) λarg (pure (& fun arg))))
       exp: (Valid exp dep)
     }
-    //App: (pure 1)
     Bri: (Valid (term.bod (Var dep)) (+ 1 dep))
     Ann: (Check term.val term.typ dep)
     Ref: (pure 1)
@@ -124,23 +120,18 @@ data Maybe
   })
 
 (Check term type dep) =
-  let type = (Reduce type)
-  (bind (log (Join ["Check: " (U60.show dep) " " (Show term dep) " :: " (Show type dep)])) λx
-  match type {
+  (bind (log (Join ["Check: " (U60.show dep) " " (Show (Reduce term) dep) " :: " (Show (Reduce type) dep)])) λx
+  match type = (Reduce type) {
     Bri: (Valid (type.bod term) dep)
     Ann: (bind (Valid type.typ dep) λtyp (bind (Check term type.val dep) λval (pure (& typ val))))
-    typ: match term {
-      Ann: match (Equal term.typ typ dep) {
-        0: (bind (log (Join ["Mismatch: " (Show typ dep) " != " (Show term.typ dep)])) λx(pure 0))
+    typ: match term = (Reduce term) {
+      Ann: match (Equal typ term.typ dep) {
+        0: (bind (log (Join ["Error: " (Show typ dep) " != " (Show term.typ dep)])) λx(pure 0))
         +: (Valid term.val dep)
       }
-      App: match term = (APP term.fun term.arg) {
-        App: (bind (Valid term.fun dep) λfun (bind (Valid term.arg dep) λarg (pure (& fun arg))))
-        exp: (Check exp typ dep)
-      }
-      Lam: (Valid (term.bod (Var dep)) dep)
-      Bri: (Valid (term.bod (Var dep)) dep)
-      exp: (pure 1)
+      //Lam: (bind (log (Join ["NotFn: " (Show (Lam term.bod) dep)])) λx(pure 0))
+      //App: (bind (log (Join ["NotFn: " (Show (Ann (App term.fun term.arg) typ) dep)])) λx(pure 0))
+      exp: (Valid exp dep)
     }
   })
 
@@ -180,15 +171,14 @@ data Maybe
   Ref: (NameOf term.uid)
 }
 
-// TODO: optimize Show and remove this
-(Quote term dep) = match term {
-  Lam: (Lam λx(Quote (term.bod (Var dep)) (+ dep 1)))
-  App: (App (Quote term.fun dep) (Quote term.arg dep))
-  Bri: (Bri λx(Quote (term.bod (Var dep)) (+ dep 1)))
-  Ann: (Ann (Quote term.val dep) (Quote term.typ dep))
-  Var: (Var term.idx)
-  Ref: (Ref term.uid term.exp)
-}
+// Logger
+// -------
+
+//Logger r = ∀(logs: [String]) ([String], r)
+(pure x)   = λlogs (logs, x)
+(bind a b) = λlogs let (a_logs, a_result) = (a logs); (b a_result a_logs)
+(log msg)  = λlogs ((LCons msg logs), 0)
+(run a)    = (a [])
 
 // Utils
 // -----
@@ -196,24 +186,6 @@ data Maybe
 (NameOf uid) = (Get uid Names)
 
 (Get n list) = match n {
-  0: match list {
-    LNil: 0
-    LCons: list.head
-  }
-  +: match list {
-    LNil: 0
-    LCons: (Get n-1 list.tail)
-  }
+  0: match list { LNil: 0; LCons: list.head }
+  +: match list { LNil: 0; LCons: (Get n-1 list.tail) }
 }
-
-// Terms
-// -----
-
-Set = (Var (- 0 1))
-
-//Names = []
-
-//T = (Ref 0 (Lam λt (Lam λf t)))
-//F = (Ref 1 (Lam λt (Lam λf f)))
-
-//Main = (Equal (App (Var 0) (Lam λt (Lam λf t))) (App (Var 0) T) 0 0)
