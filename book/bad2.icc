@@ -1,4 +1,4 @@
-bad
+bad2
 : Π(b: Bit)
   Π(P: !Bit -> *)
   Π(t: true)

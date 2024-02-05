@@ -72,31 +72,40 @@ data Term
 // Equality
 // --------
 
-(Equal a b dep) = match a {
+(Equal a b dep) = match (Compare a b dep) {
+  +: 1
+  0: 0 //(Compare (Expand a) (Expand b) dep)
+}
+
+(Compare a b dep) = match a {
   Lam: match b {
     Lam: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
     Ann: (Equal (Lam a.bod) b.val dep)
+    Ref: (Equal (Lam a.bod) b.exp dep)
     exp: 0
   }
   App: match b {
     App: (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
     Ann: (Equal (App a.fun a.arg) b.val dep)
+    Ref: (Equal (App a.fun a.arg) b.exp dep)
     exp: 0
   }
   Bri: match b {
     Bri: (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ 1 dep))
     Ann: (Equal (Bri a.bod) b.val dep)
+    Ref: (Equal (Bri a.bod) b.exp dep)
     exp: 0
   }
   Ann: (Equal a.val b dep)
   Ref: match b {
     Ref: (== a.uid b.uid)
     Ann: (Equal (Ref a.uid a.exp) b.val dep)
-    exp: 0
+    exp: (Equal a.exp exp dep)
   }
   Var: match b {
     Var: (== a.idx b.idx)
     Ann: (Equal (Var a.idx) b.val dep)
+    Ref: (Equal (Var a.idx) b.exp dep)
     exp: 0
   }
   exp: 0
@@ -109,17 +118,17 @@ data Maybe
   = None
   | (Some value)
 
-(Infer term dep) = 
+(Valid term dep) = 
   //let term = (Reduce term)
-  (bind (log (Join ["Infer: " (U60.show dep) " " (Show term dep)])) λx
+  (bind (log (Join ["Valid: " (U60.show dep) " " (Show term dep)])) λx
   match term {
-    Lam: (Infer (term.bod (Var dep)) (+ 1 dep))
+    Lam: (Valid (term.bod (Var dep)) (+ 1 dep))
     App: match term = (APP term.fun term.arg) {
-      App: (bind (Infer term.fun dep) λfun (bind (Infer term.arg dep) λarg (pure (& fun arg))))
-      exp: (Infer exp dep)
+      App: (bind (Valid term.fun dep) λfun (bind (Valid term.arg dep) λarg (pure (& fun arg))))
+      exp: (Valid exp dep)
     }
     //App: (pure 1)
-    Bri: (Infer (term.bod (Var dep)) (+ 1 dep))
+    Bri: (Valid (term.bod (Var dep)) (+ 1 dep))
     Ann: (Check term.val term.typ dep)
     Ref: (pure 1)
     Var: (pure 1)
@@ -129,18 +138,19 @@ data Maybe
   let type = (Reduce type)
   (bind (log (Join ["Check: " (U60.show dep) " " (Show term dep) " :: " (Show type dep)])) λx
   match type {
-    Bri: (Infer (type.bod term) dep)
-    Ann: (bind (Infer type.typ dep) λtyp (bind (Check term type.val dep) λval (pure (& typ val))))
+    Bri: (Valid (type.bod term) dep)
+    Ann: (bind (Valid type.typ dep) λtyp (bind (Check term type.val dep) λval (pure (& typ val))))
     typ: match term {
-      Ann: match (Equal term.typ type dep) {
-        0: (bind (log (Join ["Mismatch: " (Show type dep) " != " (Show term.typ dep)])) λx(pure 0))
-        +: (Infer term.val dep)
+      Ann: match (Equal term.typ typ dep) {
+        0: (bind (log (Join ["Mismatch: " (Show typ dep) " != " (Show term.typ dep)])) λx(pure 0))
+        +: (Valid term.val dep)
       }
       App: match term = (APP term.fun term.arg) {
-        App: (bind (Infer term.fun dep) λfun (bind (Infer term.arg dep) λarg (pure (& fun arg))))
-        exp: (Check exp type dep)
+        App: (bind (Valid term.fun dep) λfun (bind (Valid term.arg dep) λarg (pure (& fun arg))))
+        exp: (Check exp typ dep)
       }
-      Lam: (bind (log (Join ["NonFunLam: " (U60.show dep) " " (Show (Lam term.bod) dep) " :: " (Show typ dep)])) λx(pure 0))
+      Lam: (Valid (term.bod (Var dep)) dep)
+      Bri: (Valid (term.bod (Var dep)) dep)
       exp: (pure 1)
     }
   })
