@@ -18,13 +18,18 @@
 // Interactions
 // ------------
 
-(APP (Lam fun.bod) arg) = (fun.bod arg)
-(APP (Bri fun.bod) arg) = (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
-(APP fun           arg) = (App fun arg)
+(APP (Lam   fun.bod) arg) = (fun.bod arg)
+(APP (Bri   fun.bod) arg) = (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
+(APP (Ref _ fun.val) arg) = (APP fun.val arg)
+(APP fun             arg) = (App fun arg)
 
-(ANN val (Lam typ.bod)) = (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
-(ANN val (Bri typ.bod)) = (typ.bod val)
-(ANN val typ)           = (Ann val typ)
+(ANN val (Lam   typ.bod)) = (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
+(ANN val (Bri   typ.bod)) = (typ.bod val)
+(ANN val (Ref _ typ.val)) = (ANN val typ.val)
+(ANN val typ)             = (Ann val typ)
+
+(REF (Ref a.nam a.val))   = a.val
+(REF term)                = term
 
 // Equality
 // --------
@@ -32,14 +37,13 @@
 //(Equal a b dep) = (HVM.print (Join ["Equal: " (Join [(Show a dep) " == " (Show b dep)])]) (Equals a b dep))
 (Equal a b dep) = (Equals a b dep)
 
-(Equals (Fix a.bod)       b                 dep) = (Equal (a.bod (Fix a.bod)) b dep)
-(Equals a                 (Fix b.bod)       dep) = (Equal a (b.bod (Fix b.bod)) dep)
+(Equals (Ref a.nam a.val) b                 dep) = (Equal a.val b dep)
+(Equals a                 (Ref b.nam b.val) dep) = (Equal a b.val dep)
 (Equals (Ann a.val a.typ) b                 dep) = (Equal a.val b dep)
 (Equals a                 (Ann b.val b.typ) dep) = (Equal a b.val dep)
 (Equals (Lam a.bod)       (Lam b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ dep 1))
 (Equals (Bri a.bod)       (Bri b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ dep 1))
 (Equals (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
-(Equals (Fix a.bod)       (Fix b.bod)       dep) = (Equal (a.bod (b.bod (Var dep))) (b.bod (a.bod (Var dep))) (+ dep 1))
 (Equals (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
 (Equals a                 b                 dep) = 0
 
@@ -48,15 +52,12 @@
 
 (Check term dep) = (HVM.print (Join ["Check: " (Show term dep)]) (Checks term dep))
 
-(Checks (Fix bod)                 dep) = (Check (bod (Var dep)) (+ dep 1))
+(Checks (Ref nam val)             dep) = 1
 (Checks (Lam bod)                 dep) = (Check (bod (Var dep)) (+ dep 1))
-(Checks (App (Fix fun) arg)       dep) = (Check (APP (fun (Var dep)) arg) (+ dep 1))
-(Checks (App (Ann v (Fix t)) arg) dep) = (Check (APP (ANN v (t (Fix t))) arg) dep)
 (Checks (App (Ann v t) arg)       dep) = 0
 (Checks (App fun arg)             dep) = (& (Check fun dep) (Check arg dep))
 (Checks (Bri bod)                 dep) = (Check (bod (Var dep)) (+ dep 1))
 (Checks (Ann (Ann val ty0) ty1)   dep) = (& (Equal ty0 ty1 dep) (Check val dep))
-(Checks (Ann val (Fix typ))       dep) = (Check (ANN val (typ (Var dep))) (+ dep 1))
 (Checks (Ann (Lam bod) typ)       dep) = 0
 (Checks (Ann val typ)             dep) = (Check val dep)
 (Checks (Var idx)                 dep) = 1
@@ -79,7 +80,7 @@ Any = (Bri λx(x))
 // Stringification
 // ---------------
 
-(Show (Fix term.bod)          dep) = (Join ["μx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+(Show (Ref term.nam term.val) dep) = term.nam
 (Show (Lam term.bod)          dep) = (Join ["λx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
 (Show (App term.fun term.arg) dep) = (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
 (Show (Bri term.bod)          dep) = (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
@@ -88,6 +89,8 @@ Any = (Bri λx(x))
 
 // Tests
 // -----
+
+//Main = 42
 
 //// μNat. ∀(P: *) (Nat -> P) -> P -> P
 //Nat = (Fix λnat (All Any λp(All (Fun nat p) λt(All p λf(p)))))

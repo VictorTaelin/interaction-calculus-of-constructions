@@ -4,7 +4,7 @@ Bool.match
   Π(t: (P true))
   Π(f: (P false))
   (P b)
-= λb λP λt λf (b P t f) // FIXME: this checks, why?
+= λb λP λt λf (b P t t) // FIXME: this checks, why?
 
 
 
