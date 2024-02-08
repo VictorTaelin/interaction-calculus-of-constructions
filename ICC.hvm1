@@ -4,6 +4,8 @@
 // Utils
 // -----
 
+(Debug dep []  value)        = (If (> dep 64) 1 value)
+(Debug dep msg value)        = (If (> dep 64) 1 (HVM.print (Join msg) value))
 (If 0 t f)                   = f
 (If 1 t f)                   = t
 (Conc String.nil         ys) = ys
@@ -34,8 +36,7 @@
 // Equality
 // --------
 
-//(Equal a b dep) = (HVM.print (Join ["Equal: " (Join [(Show a dep) " == " (Show b dep)])]) (Equals a b dep))
-(Equal a b dep) = (Equals a b dep)
+(Equal a b dep) = (Debug dep ["Equal: " (Join [(Show a dep) " == " (Show b dep)])] (Equals a b dep))
 
 (Equals (Ref a.nam a.val) b                 dep) = (Equal a.val b dep)
 (Equals a                 (Ref b.nam b.val) dep) = (Equal a b.val dep)
@@ -50,7 +51,7 @@
 // Checking
 // --------
 
-(Check term dep) = (HVM.print (Join ["Check: " (Show term dep)]) (Checks term dep))
+(Check term dep) = (Debug dep ["Check: " (Show term dep)] (Checks term dep))
 
 (Checks (Ref nam val)             dep) = 1
 (Checks (Lam bod)                 dep) = (Check (bod (Var dep)) (+ dep 1))
@@ -62,76 +63,14 @@
 (Checks (Ann val typ)             dep) = (Check val dep)
 (Checks (Var idx)                 dep) = 1
 
-// Encodings
-// ---------
-
-// Any ::= θv v
-Any = (Bri λx(x))
-
-// (A -> B) ::= θf λx {(f {x: A}): B}
-(Fun a b) = (Bri λf(Lam λx(ANN (APP f (ANN x a)) b)))
-
-// (Π(x: A). B[x]) ::= θf λx {(f {x: A}): (B x)}
-(All a b) = (Bri λf(Lam λx(ANN (APP f (ANN x a)) (b x))))
-
-// (Πf(x: A). B[x]) ::= θf λx {(f {x: A}): (B x f)}
-(Ind a b) = (Bri λf(Lam λx(ANN (APP f (ANN x a)) (b f x))))
-
 // Stringification
 // ---------------
 
-(Show (Ref term.nam term.val) dep) = term.nam
-(Show (Lam term.bod)          dep) = (Join ["λx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
-(Show (App term.fun term.arg) dep) = (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
-(Show (Bri term.bod)          dep) = (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
-(Show (Ann term.val term.typ) dep) = (Join ["{" (Show term.val dep) " : " (Show term.typ dep) "}"])
-(Show (Var term.idx)          dep) = (Join ["x" (U60.show term.idx)])
+(Show term dep) = (Debug dep [] (Shows term dep))
 
-// Tests
-// -----
-
-//Main = 42
-
-//// μNat. ∀(P: *) (Nat -> P) -> P -> P
-//Nat = (Fix λnat (All Any λp(All (Fun nat p) λt(All p λf(p)))))
-
-//// ...
-//Zero = (Lam λP(Lam λs(Lam λz(z))))
-
-//// ...
-//Succ = (Lam λn(Lam λP(Lam λs(Lam λz(APP s n)))))
-
-////// ∀(A: *) ∀(B: *) ∀(A -> B) ∀(B -> A) ∀A A
-//TEST = (All Any λa(All Any λb(Fun (Fun a b) (Fun (Fun b a) (Fun a a)))))
-//Test = (Lam λA(Lam λB(Lam λab(Lam λba(Lam λa(APP ba (APP ab a))))))) 
-
-//Main = (Check (ANN Test TEST) 0)
-//Main = (Check (ANN (Lam λb(b)) (Fun Nat Nat)) 1)
-
-//Check: λx1 {{x1 : Nat} : Nat}
-//Check: {{x1 : Nat} : Nat}
-//Check: λx3 λx4 λx5 {((({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3}) {x5 : x3}) : x3}
-//Check: λx4 λx5 {((({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3}) {x5 : x3}) : x3}
-//Check: λx5 {((({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3}) {x5 : x3}) : x3}
-//Check: {((({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3}) {x5 : x3}) : x3}
-//Check: ((({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3}) {x5 : x3})
-//Check: {x5 : x3}
-//Check: x5
-//Check: (({x1 : Nat} x3) λx6 {(x4 {x6 : x2}) : x3})
-//Check: λx6 {(x4 {x6 : x2}) : x3}
-//Check: {(x4 {x6 : x2}) : x3}
-//Check: (x4 {x6 : x2})
-//Check: {x6 : x2}
-//Check: x6
-//Check: x4
-//Check: ({x1 : Nat} x3)
-
-
-
-
-
-
-
-
-
-
+(Shows (Ref term.nam term.val) dep) = term.nam
+(Shows (Lam term.bod)          dep) = (Join ["λx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+(Shows (App term.fun term.arg) dep) = (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
+(Shows (Bri term.bod)          dep) = (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+(Shows (Ann term.val term.typ) dep) = (Join ["{" (Show term.val dep) " : " (Show term.typ dep) "}"])
+(Shows (Var term.idx)          dep) = (Join ["x" (U60.show term.idx)])

@@ -1,6 +1,9 @@
+UNIT
+= Π(P: *)
+  Π(a: P)
+  P
+
 Unit
-: *
-= μUnit
-  $self(P: !Unit -> *)
-  Π(u: (P λPλa(a)))
+= $self(P: !UNIT -> *)
+  Π(a: (P atom))
   (P self)
