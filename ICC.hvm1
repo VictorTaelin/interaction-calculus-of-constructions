@@ -4,8 +4,10 @@
 // Utils
 // -----
 
-(Debug dep []  value)        = (If (> dep 64) 1 value)
-(Debug dep msg value)        = (If (> dep 64) 1 (HVM.print (Join msg) value))
+(Debug dep []  value) = (If (> dep 64) 1 value)
+(Debug dep msg value) = (If (> dep 64) 1 (HVM.print (Join msg) value))
+//(DEbug dep msg value) = value 
+
 (If 0 t f)                   = f
 (If 1 t f)                   = t
 (Conc String.nil         ys) = ys
@@ -46,6 +48,8 @@
 (Equals (Bri a.bod)       (Bri b.bod)       dep) = (Equal (a.bod (Var dep)) (b.bod (Var dep)) (+ dep 1))
 (Equals (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
 (Equals (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
+(Equals (Lam a.bod)       b                 dep) = (Equals (Lam a.bod) (Lam λx(App b x)) dep)
+(Equals a                 (Lam b.bod)       dep) = (Equals (Lam λx(App a x)) (Lam b.bod) dep)
 (Equals a                 b                 dep) = 0
 
 // Checking

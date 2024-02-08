@@ -1,7 +1,3 @@
-EMPTY
-= Π(P: *)
-  P 
-
 Empty
-= $self(P: !EMPTY -> *)
+= $self(P: *)
   (P self)

@@ -1,6 +1,6 @@
 if
 : Π(b: Bool)
-  Π(P: !Bool -> *)
+  Π(P: *)
   Π(t: (P true))
   Π(f: (P false))
   (P b)

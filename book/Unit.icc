@@ -1,9 +1,4 @@
-UNIT
-= Π(P: *)
-  Π(a: P)
-  P
-
 Unit
-= $self(P: !UNIT -> *)
+= $self(P: *)
   Π(a: (P atom))
   (P self)
