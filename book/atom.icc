@@ -1,0 +1,4 @@
+atom
+: Unit
+= λP λa
+  a

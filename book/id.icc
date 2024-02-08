@@ -1,0 +1,189 @@
+id
+: Π(b: Bool) Bool
+= λb b
+
+//Check: λx0 x0 :: θx0 λx1 {(x0 {x1 : Bool}) : (λx2 Bool x1)}
+//Valid: λx0 {(λx1 x1 {x0 : Bool}) : (λx1 Bool x0)}
+//Valid: {(λx1 x1 {x0 : Bool}) : (λx1 Bool x0)}
+//Check: (λx1 x1 {x0 : Bool}) :: Bool
+//Error: λx1 {(x0 {x1 : ((Fun Bool) Any)}) : ((λx2 λx3 ((All (x3 true)) λx4 ((All (x3 false)) λx5 (x3 x2))) x0) x1)} isn't a function
+
+
+
+
+
+
+//Check: λx0 x0 :: θx0 λx1 {(x0 {x1 : Bool}) : (λx2 Bool x1)}
+//Valid: λx0 {(λx1 x1 {x0 : Bool}) : (λx1 Bool x0)}
+//Valid: {(λx1 x1 {x0 : Bool}) : (λx1 Bool x0)}
+//Check: (λx1 x1 {x0 : Bool}) :: θx1 λx2 {(x1 {x2 : ((Fun Bool) Any)}) : ((λx3 λx4 ((All (x4 true)) λx5 ((All (x4 false)) λx6 (x4 x3))) x1) x2)}
+//Valid: λx1 {((λx2 x2 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) : ((λx2 λx3 ((All (x3 true)) λx4 ((All (x3 false)) λx5 (x3 x2))) (λx2 x2 {x0 : Bool})) x1)}
+//Valid: {((λx2 x2 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) : ((λx2 λx3 ((All (x3 true)) λx4 ((All (x3 false)) λx5 (x3 x2))) (λx2 x2 {x0 : Bool})) x1)}
+//Check: ((λx2 x2 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) :: θx2 λx3 {(x2 {x3 : (x1 true)}) : (λx4 ((All (x1 false)) λx5 (x1 (λx6 x6 {x0 : Bool}))) x3)}
+//Valid: λx2 {(((λx3 x3 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) : (λx3 ((All (x1 false)) λx4 (x1 (λx5 x5 {x0 : Bool}))) x2)}
+//Valid: {(((λx3 x3 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) : (λx3 ((All (x1 false)) λx4 (x1 (λx5 x5 {x0 : Bool}))) x2)}
+//Check: (((λx3 x3 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) :: θx3 λx4 {(x3 {x4 : (x1 false)}) : (λx5 (x1 (λx6 x6 {x0 : Bool})) x4)}
+//Valid: λx3 {((((λx4 x4 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) {x3 : (x1 false)}) : (λx4 (x1 (λx5 x5 {x0 : Bool})) x3)}
+//Valid: {((((λx4 x4 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) {x3 : (x1 false)}) : (λx4 (x1 (λx5 x5 {x0 : Bool})) x3)}
+//Check: ((((λx4 x4 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) {x3 : (x1 false)}) :: (x1 (λx4 x4 {x0 : Bool}))
+//Again: ((((λx4 x4 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) {x3 : (x1 false)}) :: (x1 (λx4 x4 {x0 : Bool}))
+//Valid: ((((λx4 x4 {x0 : Bool}) {x1 : ((Fun Bool) Any)}) {x2 : (x1 true)}) {x3 : (x1 false)})
+//Valid: {(((x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)}) {{x3 : (x1 false)} : ({x1 : ((Fun Bool) Any)} false)}) : (x1 {x0 : Bool})}
+//Check: (((x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)}) {{x3 : (x1 false)} : ({x1 : ((Fun Bool) Any)} false)}) :: (x1 {x0 : Bool})
+//Again: (((x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)}) {{x3 : (x1 false)} : ({x1 : ((Fun Bool) Any)} false)}) :: (x1 {x0 : Bool})
+//Valid: (((x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)}) {{x3 : (x1 false)} : ({x1 : ((Fun Bool) Any)} false)})
+//Valid: {{x3 : (x1 false)} : ({x1 : ((Fun Bool) Any)} false)}
+//Check: {x3 : (x1 false)} :: (x1 {false : Bool})
+//Again: {x3 : (x1 false)} :: (x1 {false : Bool})
+//Valid: x3
+//Valid: ((x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)})
+//Valid: {{x2 : (x1 true)} : ({x1 : ((Fun Bool) Any)} true)}
+//Check: {x2 : (x1 true)} :: (x1 {true : Bool})
+//Again: {x2 : (x1 true)} :: (x1 {true : Bool})
+//Valid: x2
+//Valid: (x0 {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)})
+//Valid: {{x1 : ((Fun Bool) Any)} : ((Fun Bool) Any)}
+//Check: {x1 : ((Fun Bool) Any)} :: θx4 λx5 {(x4 {x5 : Bool}) : Any}
+//Valid: λx4 {({x1 : ((Fun Bool) Any)} {x4 : Bool}) : Any}
+//Valid: {({x1 : ((Fun Bool) Any)} {x4 : Bool}) : Any}
+//Check: ({x1 : ((Fun Bool) Any)} {x4 : Bool}) :: θx5 x5
+//Valid: ({x1 : ((Fun Bool) Any)} {x4 : Bool})
+//Valid: {{x4 : Bool} : Bool}
+//Check: {x4 : Bool} :: θx5 λx6 {(x5 {x6 : ((Fun Bool) Any)}) : ((λx7 λx8 ((All (x8 true)) λx9 ((All (x8 false)) λx10 (x8 x7))) x5) x6)}
+//Valid: λx5 {({x4 : Bool} {x5 : ((Fun Bool) Any)}) : ((λx6 λx7 ((All (x7 true)) λx8 ((All (x7 false)) λx9 (x7 x6))) {x4 : Bool}) x5)}
+//Valid: {({x4 : Bool} {x5 : ((Fun Bool) Any)}) : ((λx6 λx7 ((All (x7 true)) λx8 ((All (x7 false)) λx9 (x7 x6))) {x4 : Bool}) x5)}
+//Check: ({x4 : Bool} {x5 : ((Fun Bool) Any)}) :: θx6 λx7 {(x6 {x7 : (x5 true)}) : (λx8 ((All (x5 false)) λx9 (x5 {x4 : Bool})) x7)}
+//Valid: λx6 {(({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) : (λx7 ((All (x5 false)) λx8 (x5 {x4 : Bool})) x6)}
+//Valid: {(({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) : (λx7 ((All (x5 false)) λx8 (x5 {x4 : Bool})) x6)}
+//Check: (({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) :: θx7 λx8 {(x7 {x8 : (x5 false)}) : (λx9 (x5 {x4 : Bool}) x8)}
+//Valid: λx7 {((({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) {x7 : (x5 false)}) : (λx8 (x5 {x4 : Bool}) x7)}
+//Valid: {((({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) {x7 : (x5 false)}) : (λx8 (x5 {x4 : Bool}) x7)}
+//Check: ((({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) {x7 : (x5 false)}) :: (x5 {x4 : Bool})
+//Again: ((({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) {x7 : (x5 false)}) :: (x5 {x4 : Bool})
+//Valid: ((({x4 : Bool} {x5 : ((Fun Bool) Any)}) {x6 : (x5 true)}) {x7 : (x5 false)})
+//Valid: {(((x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)}) {{x7 : (x5 false)} : ({x5 : ((Fun Bool) Any)} false)}) : (x5 {x4 : Bool})}
+//Check: (((x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)}) {{x7 : (x5 false)} : ({x5 : ((Fun Bool) Any)} false)}) :: (x5 {x4 : Bool})
+//Again: (((x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)}) {{x7 : (x5 false)} : ({x5 : ((Fun Bool) Any)} false)}) :: (x5 {x4 : Bool})
+//Valid: (((x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)}) {{x7 : (x5 false)} : ({x5 : ((Fun Bool) Any)} false)})
+//Valid: {{x7 : (x5 false)} : ({x5 : ((Fun Bool) Any)} false)}
+//Check: {x7 : (x5 false)} :: (x5 {false : Bool})
+//Again: {x7 : (x5 false)} :: (x5 {false : Bool})
+//Valid: x7
+//Valid: ((x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)})
+//Valid: {{x6 : (x5 true)} : ({x5 : ((Fun Bool) Any)} true)}
+//Check: {x6 : (x5 true)} :: (x5 {true : Bool})
+//Again: {x6 : (x5 true)} :: (x5 {true : Bool})
+//Valid: x6
+//Valid: (x4 {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)})
+//Valid: {{x5 : ((Fun Bool) Any)} : ((Fun Bool) Any)}
+//Check: {x5 : ((Fun Bool) Any)} :: θx8 λx9 {(x8 {x9 : Bool}) : Any}
+//Valid: λx8 {({x5 : ((Fun Bool) Any)} {x8 : Bool}) : Any}
+//Valid: {({x5 : ((Fun Bool) Any)} {x8 : Bool}) : Any}
+//Check: ({x5 : ((Fun Bool) Any)} {x8 : Bool}) :: θx9 x9
+//Valid: ({x5 : ((Fun Bool) Any)} {x8 : Bool})
+//Valid: {{x8 : Bool} : Bool}
+//Check: {x8 : Bool} :: θx9 λx10 {(x9 {x10 : ((Fun Bool) Any)}) : ((λx11 λx12 ((All (x12 true)) λx13 ((All (x12 false)) λx14 (x12 x11))) x9) x10)}
+//Valid: λx9 {({x8 : Bool} {x9 : ((Fun Bool) Any)}) : ((λx10 λx11 ((All (x11 true)) λx12 ((All (x11 false)) λx13 (x11 x10))) {x8 : Bool}) x9)}
+//Valid: {({x8 : Bool} {x9 : ((Fun Bool) Any)}) : ((λx10 λx11 ((All (x11 true)) λx12 ((All (x11 false)) λx13 (x11 x10))) {x8 : Bool}) x9)}
+//Check: ({x8 : Bool} {x9 : ((Fun Bool) Any)}) :: θx10 λx11 {(x10 {x11 : (x9 true)}) : (λx12 ((All (x9 false)) λx13 (x9 {x8 : Bool})) x11)}
+//Valid: λx10 {(({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) : (λx11 ((All (x9 false)) λx12 (x9 {x8 : Bool})) x10)}
+//Valid: {(({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) : (λx11 ((All (x9 false)) λx12 (x9 {x8 : Bool})) x10)}
+//Check: (({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) :: θx11 λx12 {(x11 {x12 : (x9 false)}) : (λx13 (x9 {x8 : Bool}) x12)}
+//Valid: λx11 {((({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) {x11 : (x9 false)}) : (λx12 (x9 {x8 : Bool}) x11)}
+//Valid: {((({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) {x11 : (x9 false)}) : (λx12 (x9 {x8 : Bool}) x11)}
+//Check: ((({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) {x11 : (x9 false)}) :: (x9 {x8 : Bool})
+//Again: ((({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) {x11 : (x9 false)}) :: (x9 {x8 : Bool})
+//Valid: ((({x8 : Bool} {x9 : ((Fun Bool) Any)}) {x10 : (x9 true)}) {x11 : (x9 false)})
+//Valid: {(((x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)}) {{x11 : (x9 false)} : ({x9 : ((Fun Bool) Any)} false)}) : (x9 {x8 : Bool})}
+//Check: (((x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)}) {{x11 : (x9 false)} : ({x9 : ((Fun Bool) Any)} false)}) :: (x9 {x8 : Bool})
+//Again: (((x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)}) {{x11 : (x9 false)} : ({x9 : ((Fun Bool) Any)} false)}) :: (x9 {x8 : Bool})
+//Valid: (((x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)}) {{x11 : (x9 false)} : ({x9 : ((Fun Bool) Any)} false)})
+//Valid: {{x11 : (x9 false)} : ({x9 : ((Fun Bool) Any)} false)}
+//Check: {x11 : (x9 false)} :: (x9 {false : Bool})
+//Again: {x11 : (x9 false)} :: (x9 {false : Bool})
+//Valid: x11
+//Valid: ((x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)})
+//Valid: {{x10 : (x9 true)} : ({x9 : ((Fun Bool) Any)} true)}
+//Check: {x10 : (x9 true)} :: (x9 {true : Bool})
+//Again: {x10 : (x9 true)} :: (x9 {true : Bool})
+//Valid: x10
+//Valid: (x8 {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)})
+//Valid: {{x9 : ((Fun Bool) Any)} : ((Fun Bool) Any)}
+//Check: {x9 : ((Fun Bool) Any)} :: θx12 λx13 {(x12 {x13 : Bool}) : Any}
+//Valid: λx12 {({x9 : ((Fun Bool) Any)} {x12 : Bool}) : Any}
+//Valid: {({x9 : ((Fun Bool) Any)} {x12 : Bool}) : Any}
+//Check: ({x9 : ((Fun Bool) Any)} {x12 : Bool}) :: θx13 x13
+//Valid: ({x9 : ((Fun Bool) Any)} {x12 : Bool})
+//Valid: {{x12 : Bool} : Bool}
+//Check: {x12 : Bool} :: θx13 λx14 {(x13 {x14 : ((Fun Bool) Any)}) : ((λx15 λx16 ((All (x16 true)) λx17 ((All (x16 false)) λx18 (x16 x15))) x13) x14)}
+//Valid: λx13 {({x12 : Bool} {x13 : ((Fun Bool) Any)}) : ((λx14 λx15 ((All (x15 true)) λx16 ((All (x15 false)) λx17 (x15 x14))) {x12 : Bool}) x13)}
+//Valid: {({x12 : Bool} {x13 : ((Fun Bool) Any)}) : ((λx14 λx15 ((All (x15 true)) λx16 ((All (x15 false)) λx17 (x15 x14))) {x12 : Bool}) x13)}
+//Check: ({x12 : Bool} {x13 : ((Fun Bool) Any)}) :: θx14 λx15 {(x14 {x15 : (x13 true)}) : (λx16 ((All (x13 false)) λx17 (x13 {x12 : Bool})) x15)}
+//Valid: λx14 {(({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) : (λx15 ((All (x13 false)) λx16 (x13 {x12 : Bool})) x14)}
+//Valid: {(({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) : (λx15 ((All (x13 false)) λx16 (x13 {x12 : Bool})) x14)}
+//Check: (({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) :: θx15 λx16 {(x15 {x16 : (x13 false)}) : (λx17 (x13 {x12 : Bool}) x16)}
+//Valid: λx15 {((({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) {x15 : (x13 false)}) : (λx16 (x13 {x12 : Bool}) x15)}
+//Valid: {((({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) {x15 : (x13 false)}) : (λx16 (x13 {x12 : Bool}) x15)}
+//Check: ((({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) {x15 : (x13 false)}) :: (x13 {x12 : Bool})
+//Again: ((({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) {x15 : (x13 false)}) :: (x13 {x12 : Bool})
+//Valid: ((({x12 : Bool} {x13 : ((Fun Bool) Any)}) {x14 : (x13 true)}) {x15 : (x13 false)})
+//Valid: {(((x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)}) {{x15 : (x13 false)} : ({x13 : ((Fun Bool) Any)} false)}) : (x13 {x12 : Bool})}
+//Check: (((x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)}) {{x15 : (x13 false)} : ({x13 : ((Fun Bool) Any)} false)}) :: (x13 {x12 : Bool})
+//Again: (((x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)}) {{x15 : (x13 false)} : ({x13 : ((Fun Bool) Any)} false)}) :: (x13 {x12 : Bool})
+//Valid: (((x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)}) {{x15 : (x13 false)} : ({x13 : ((Fun Bool) Any)} false)})
+//Valid: {{x15 : (x13 false)} : ({x13 : ((Fun Bool) Any)} false)}
+//Check: {x15 : (x13 false)} :: (x13 {false : Bool})
+//Again: {x15 : (x13 false)} :: (x13 {false : Bool})
+//Valid: x15
+//Valid: ((x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)})
+//Valid: {{x14 : (x13 true)} : ({x13 : ((Fun Bool) Any)} true)}
+//Check: {x14 : (x13 true)} :: (x13 {true : Bool})
+//Again: {x14 : (x13 true)} :: (x13 {true : Bool})
+//Valid: x14
+//Valid: (x12 {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)})
+//Valid: {{x13 : ((Fun Bool) Any)} : ((Fun Bool) Any)}
+//Check: {x13 : ((Fun Bool) Any)} :: θx16 λx17 {(x16 {x17 : Bool}) : Any}
+//Valid: λx16 {({x13 : ((Fun Bool) Any)} {x16 : Bool}) : Any}
+//Valid: {({x13 : ((Fun Bool) Any)} {x16 : Bool}) : Any}
+//Check: ({x13 : ((Fun Bool) Any)} {x16 : Bool}) :: θx17 x17
+//Valid: ({x13 : ((Fun Bool) Any)} {x16 : Bool})
+//Valid: {{x16 : Bool} : Bool}
+//Check: {x16 : Bool} :: θx17 λx18 {(x17 {x18 : ((Fun Bool) Any)}) : ((λx19 λx20 ((All (x20 true)) λx21 ((All (x20 false)) λx22 (x20 x19))) x17) x18)}
+//Valid: λx17 {({x16 : Bool} {x17 : ((Fun Bool) Any)}) : ((λx18 λx19 ((All (x19 true)) λx20 ((All (x19 false)) λx21 (x19 x18))) {x16 : Bool}) x17)}
+//Valid: {({x16 : Bool} {x17 : ((Fun Bool) Any)}) : ((λx18 λx19 ((All (x19 true)) λx20 ((All (x19 false)) λx21 (x19 x18))) {x16 : Bool}) x17)}
+//Check: ({x16 : Bool} {x17 : ((Fun Bool) Any)}) :: θx18 λx19 {(x18 {x19 : (x17 true)}) : (λx20 ((All (x17 false)) λx21 (x17 {x16 : Bool})) x19)}
+//Valid: λx18 {(({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) : (λx19 ((All (x17 false)) λx20 (x17 {x16 : Bool})) x18)}
+//Valid: {(({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) : (λx19 ((All (x17 false)) λx20 (x17 {x16 : Bool})) x18)}
+//Check: (({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) :: θx19 λx20 {(x19 {x20 : (x17 false)}) : (λx21 (x17 {x16 : Bool}) x20)}
+//Valid: λx19 {((({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) {x19 : (x17 false)}) : (λx20 (x17 {x16 : Bool}) x19)}
+//Valid: {((({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) {x19 : (x17 false)}) : (λx20 (x17 {x16 : Bool}) x19)}
+//Check: ((({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) {x19 : (x17 false)}) :: (x17 {x16 : Bool})
+//Again: ((({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) {x19 : (x17 false)}) :: (x17 {x16 : Bool})
+//Valid: ((({x16 : Bool} {x17 : ((Fun Bool) Any)}) {x18 : (x17 true)}) {x19 : (x17 false)})
+//Valid: {(((x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)}) {{x19 : (x17 false)} : ({x17 : ((Fun Bool) Any)} false)}) : (x17 {x16 : Bool})}
+//Check: (((x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)}) {{x19 : (x17 false)} : ({x17 : ((Fun Bool) Any)} false)}) :: (x17 {x16 : Bool})
+//Again: (((x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)}) {{x19 : (x17 false)} : ({x17 : ((Fun Bool) Any)} false)}) :: (x17 {x16 : Bool})
+//Valid: (((x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)}) {{x19 : (x17 false)} : ({x17 : ((Fun Bool) Any)} false)})
+//Valid: {{x19 : (x17 false)} : ({x17 : ((Fun Bool) Any)} false)}
+//Check: {x19 : (x17 false)} :: (x17 {false : Bool})
+//Again: {x19 : (x17 false)} :: (x17 {false : Bool})
+//Valid: x19
+//Valid: ((x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}) {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)})
+//Valid: {{x18 : (x17 true)} : ({x17 : ((Fun Bool) Any)} true)}
+//Check: {x18 : (x17 true)} :: (x17 {true : Bool})
+//Again: {x18 : (x17 true)} :: (x17 {true : Bool})
+//Valid: x18
+//Valid: (x16 {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)})
+//Valid: {{x17 : ((Fun Bool) Any)} : ((Fun Bool) Any)}
+//Check: {x17 : ((Fun Bool) Any)} :: θx20 λx21 {(x20 {x21 : Bool}) : Any}
+//Valid: λx20 {({x17 : ((Fun Bool) Any)} {x20 : Bool}) : Any}
+//Valid: {({x17 : ((Fun Bool) Any)} {x20 : Bool}) : Any}
+//Valid: x16
+//Valid: x13
+//Valid: x12
+//Valid: x9
+//Valid: x8
+//Valid: x5
+//Valid: x4
+//Valid: x1
+//Valid: x0

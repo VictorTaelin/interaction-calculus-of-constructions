@@ -1,0 +1,39 @@
+Bool.match
+: Π(b: Bool)
+  Π(P: !Bool -> *)
+  Π(t: (P true))
+  Π(f: (P false))
+  (P b)
+= λb λP λt λf (b P t f) // FIXME: this checks, why?
+
+
+
+//Check: λx0 λx1 λx2 λx3 {((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {false : Bool})}) : (x1 x0)}
+//Check: λx1 λx2 λx3 {((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {true : Bool})}) : (x1 x0)}
+//Check: λx2 λx3 {((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {true : Bool})}) : (x1 x0)}
+//Check: λx3 {((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {true : Bool})}) : (x1 x0)}
+//Check: {((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {true : Bool})}) : (x1 x0)}
+//Check: ((({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})}) {x2 : (x1 {true : Bool})})
+//Check: {x2 : (x1 {true : Bool})}
+//Check: x2
+//Check: (({x0 : Bool} λx4 (x1 {x4 : Bool})) {x2 : (x1 {true : Bool})})
+//Check: {x2 : (x1 {true : Bool})}
+//Check: x2
+//Check: ({x0 : Bool} λx4 (x1 {x4 : Bool}))
+//Check: λx4 λx5 {(((x0 λx6 (x1 {{x6 : Bool} : Bool})) {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})}) {x5 : (x1 {λx6 λx7 λx8 x8 : Bool})}) : (x1 {x0 : Bool})}
+//Check: λx5 {(((x0 λx6 (x1 {{x6 : Bool} : Bool})) {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})}) {x5 : (x1 {λx6 λx7 λx8 x8 : Bool})}) : (x1 {x0 : Bool})}
+//Check: {(((x0 λx6 (x1 {{x6 : Bool} : Bool})) {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})}) {x5 : (x1 {λx6 λx7 λx8 x8 : Bool})}) : (x1 {x0 : Bool})}
+//Check: (((x0 λx6 (x1 {{x6 : Bool} : Bool})) {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})}) {x5 : (x1 {λx6 λx7 λx8 x8 : Bool})})
+//Check: {x5 : (x1 {λx6 λx7 λx8 x8 : Bool})}
+//Check: x5
+//Check: ((x0 λx6 (x1 {{x6 : Bool} : Bool})) {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})})
+//Check: {x4 : (x1 {λx6 λx7 λx8 x7 : Bool})}
+//Check: x4
+//Check: (x0 λx6 (x1 {{x6 : Bool} : Bool}))
+//Check: λx6 (x1 {{x6 : Bool} : Bool})
+//Check: (x1 {{x6 : Bool} : Bool})
+//Check: {{x6 : Bool} : Bool}
+//Check: x6
+//Check: x1
+//Check: x0
+

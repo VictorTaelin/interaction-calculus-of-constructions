@@ -1,0 +1,6 @@
+Unit
+: *
+= μUnit
+  $self(P: !Unit -> *)
+  Π(u: (P λPλa(a)))
+  (P self)

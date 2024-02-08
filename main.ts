@@ -18,6 +18,7 @@ const Nil  = <A>(): List<A>                       => ({ tag: "Nil" });
 // ----
 
 type Term =
+  | { $: "Fix"; bod: (x:Term)=> Term }
   | { $: "Lam"; bod: (x:Term)=> Term }
   | { $: "App"; fun: Term; arg: Term }
   | { $: "Bri"; bod: (x:Term)=> Term }
@@ -26,6 +27,7 @@ type Term =
   | { $: "Ref"; nam: string };
 
 // Constructors
+export const Fix = (bod: (x:Term)=> Term): Term => ({ $: "Fix", bod });
 export const Lam = (bod: (x:Term)=> Term): Term => ({ $: "Lam", bod });
 export const App = (fun: Term, arg: Term): Term => ({ $: "App", fun, arg });
 export const Bri = (bod: (x:Term)=> Term): Term => ({ $: "Bri", bod });
@@ -62,6 +64,7 @@ export const name = (numb: number): string => {
 
 export const show = (term: Term, dep: number = 0): string => {
   switch (term.$) {
+    case "Fix": return `μ${name(dep)} ${show(term.bod(Var(dep)), dep + 1)}`;
     case "Lam": return `λ${name(dep)} ${show(term.bod(Var(dep)), dep + 1)}`;
     case "App": return `(${show(term.fun, dep)} ${show(term.arg, dep)})`;
     case "Bri": return `θ${name(dep)} ${show(term.bod(Var(dep)), dep + 1)}`;
@@ -73,12 +76,13 @@ export const show = (term: Term, dep: number = 0): string => {
 
 export const compile = (term: Term, dep: number = 0): string => {
   switch (term.$) {
+    case "Fix": return `(Fix λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
     case "Lam": return `(Lam λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
-    case "App": return `(App ${compile(term.fun, dep)} ${compile(term.arg, dep)})`;
+    case "App": return `(APP ${compile(term.fun, dep)} ${compile(term.arg, dep)})`;
     case "Bri": return `(Bri λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
-    case "Ann": return `(Ann ${compile(term.val, dep)} ${compile(term.typ, dep)})`;
+    case "Ann": return `(ANN ${compile(term.val, dep)} ${compile(term.typ, dep)})`;
     case "Var": return name(term.nam);
-    case "Ref": return "_"+term.nam;
+    case "Ref": return "T_"+term.nam;
   }
 };
 
@@ -146,6 +150,12 @@ export function parse_text(code: string, text: string): [string, null] {
 
 export function parse_term(code: string): [string, (ctx: Scope) => Term] {
   code = skip(code);
+  // FIX: `μx f`
+  if (code[0] === "μ") {
+    var [code, nam] = parse_name(code.slice(1));
+    var [code, bod] = parse_term(code);
+    return [code, ctx => Fix(x => bod(Cons([nam, x], ctx)))];
+  }
   // LAM: `λx f`
   if (code[0] === "λ") {
     var [code, nam] = parse_name(code.slice(1));
@@ -258,7 +268,7 @@ import { execSync } from "child_process";
 
 export function main() {
   // Loads ICC's HVM checker.
-  var icc_hvml = fs.readFileSync(__dirname + "/ICC.hvml", "utf8");
+  var icc_hvm1 = fs.readFileSync(__dirname + "/ICC.hvm1", "utf8");
 
   // Loads all local ".icc" files.
   const code = fs.readdirSync(".")
@@ -269,11 +279,11 @@ export function main() {
   // Parses into book.
   const book = do_parse_book(code);
 
-  // Compiles book to HVML.
-  var book_hvml = "Names = [" + Object.keys(book).map(x => '"'+x+'"').join(",") + "]\n";
-  var ref_count = 0;
+  // Compiles book to HVM1.
+  var book_hvm1 = "";
   for (let name in book) {
-    book_hvml += "_" + name + " = (Ref " + (ref_count++) + ' ' + compile(book[name]) + ")\n";
+    //book_hvm1 += "T_" + name + " = (Ref \"" + name + "\" " + compile(book[name]) + ")\n";
+    book_hvm1 += "T_" + name + " = " + compile(book[name]) + "\n";
   }
 
   // Gets arguments.
@@ -282,15 +292,15 @@ export function main() {
   const name = args[1];
 
   // Creates main.
-  var main_hvml = "";
+  var main_hvm1 = "";
   switch (func) {
     case "check": {
-      main_hvml = "Main = (Chk _" + name + ")\n";
+      main_hvm1 = "Main = (Check T_" + name + " 0)\n";
       break;
     }
     case "run": {
       console.log("oxi");
-      main_hvml = "Main = (Run _" + name + ")\n";
+      main_hvm1 = "Main = (Normal T_" + name + " 0)\n";
       break;
     }
     default: {
@@ -298,14 +308,15 @@ export function main() {
     }
   }
 
-  // Generates the 'checker.hvml' file.
-  var checker_hvml = [icc_hvml, book_hvml, main_hvml].join("\n\n");
+  // Generates the 'checker.hvm1' file.
+  var checker_hvm1 = [icc_hvm1, book_hvm1, main_hvm1].join("\n\n");
 
   // Saves locally.
-  fs.writeFileSync("./.checker.hvml", checker_hvml);
+  fs.writeFileSync("./.checker.hvm1", checker_hvm1);
 
-  // Runs 'hvml checker.hvml -s -L -1'
-  const output = execSync("hvml run .checker.hvml -s -L -1").toString();
+  // Runs 'hvm1 checker.hvm1 -s -L -1'
+  const output = execSync("hvm1 run -t 1 -c -f .checker.hvm1 \"(Main)\"").toString();
+
   try {
     var check_text = output.slice(output.indexOf("[["), output.indexOf("RWTS")).trim();
     var stats_text = output.slice(output.indexOf("RWTS"));

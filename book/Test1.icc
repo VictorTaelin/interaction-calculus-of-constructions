@@ -1,7 +1,13 @@
 Test1
-: Π(P: !Bool -> *)
-  Π(t: (P true))
-  Π(f: (P false))
-  (P true)
-= λP λt λf
-  t
+: Π(A: *)
+  Π(B: *)
+  Π(aa: !A -> A)
+  Π(ab: !A -> B)
+  Π(ba: !B -> A)
+  Π(bb: !B -> B)
+  Π(a: A)
+  Π(b: B)
+  A
+= λA λB λaa λab λba λbb λa λb
+  (ba (ab (aa (aa a))))
+

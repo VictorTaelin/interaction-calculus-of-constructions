@@ -1,0 +1,5 @@
+Empty
+: *
+= μEmpty
+  $self(P: !Empty -> *)
+  (P self)

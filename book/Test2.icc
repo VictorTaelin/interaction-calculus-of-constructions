@@ -1,8 +1,10 @@
 Test2
-: Π(A: *)
-  Π(B: *)
-  Π(a: A)
-  Π(b: B)
-  A
-= λA λB λa λb
-  b
+: Π(P: !Bool -> *)
+  Π(t: (P true))
+  Π(f: (P false))
+  (P false)
+= λP λt λf
+  t
+
+
+
