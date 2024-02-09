@@ -282,7 +282,8 @@ export function main() {
   // Compiles book to HVM1.
   var book_hvm1 = "";
   for (let name in book) {
-    book_hvm1 += "T_" + name + " = (Ref \"" + name + "\" " + compile(book[name]) + ")\n";
+    book_hvm1 += "T_" + name + " = " + compile(book[name]) + "\n";
+    //book_hvm1 += "T_" + name + " = (Ref \"" + name + "\" " + compile(book[name]) + ")\n";
     //book_hvm1 += "T_" + name + " = " + compile(book[name]) + "\n";
   }
 
@@ -295,12 +296,11 @@ export function main() {
   var main_hvm1 = "";
   switch (func) {
     case "check": {
-      main_hvm1 = "Main = (Check (REF T_" + name + ") 0)\n";
+      main_hvm1 = "Main = (Check T_" + name + " 0)\n";
       break;
     }
     case "run": {
-      console.log("oxi");
-      main_hvm1 = "Main = (Normal T_" + name + " 0)\n";
+      main_hvm1 = "Main = (Show T_" + name + " 0)\n";
       break;
     }
     default: {
