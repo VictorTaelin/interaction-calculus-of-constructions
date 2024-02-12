@@ -1,0 +1,8 @@
+Bool.match
+: Π(b: Bool)
+  Π(P: !Any -> *)
+  Π(t: (P λPλtλf(t)))
+  Π(f: (P λPλtλf(f)))
+  (P b)
+= λb λP λt λf
+  (b P t t)

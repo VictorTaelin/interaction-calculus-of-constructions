@@ -1,5 +1,5 @@
 Bool
-= $self(P: *) // FIXME: we can't have `!Bool -> *` due to infinite recursion
-  Π(t: (P true))
-  Π(f: (P false))
+= $self(P: !Any -> *)
+  Π(t: (P λPλtλf(t)))
+  Π(f: (P λPλtλf(f)))
   (P self)

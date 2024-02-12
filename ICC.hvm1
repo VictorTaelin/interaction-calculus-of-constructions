@@ -5,46 +5,83 @@
 // ------------
 
 // Applications
-(APP (Lam fun.bod) arg) = (fun.bod arg)
-(APP (Bri fun.bod) arg) = (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
-(APP fun           arg) = (App fun arg)
+(APP (Lam fun.bod)         arg) = (fun.bod arg)
+(APP (Bri fun.bod)         arg) = (Bri λx(APP (fun.bod (Lam λ$k(x))) (ANN $k arg)))
+(APP (Ref fun.nam fun.val) arg) = (APP fun.val arg)
+(APP fun                   arg) = (App fun arg)
 
 // Annotations
-(ANN (Ann val ty0) ty1) = (ANN val (EQL ty0 ty1))
-(ANN val (Lam typ.bod)) = (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
-(ANN val (Bri typ.bod)) = (typ.bod val)
-(ANN val typ)           = (Ann val typ)
+(ANN val (Lam typ.bod))         = (Lam λx(ANN (APP val $k) (typ.bod (Bri λ$k(x)))))
+(ANN val (Bri typ.bod))         = (typ.bod val)
+(ANN val (Ref typ.nam typ.val)) = (ANN val typ.val)
+(ANN val typ)                   = (Ann val typ)
+
+// References
+(REF (Ref nam val)) = (REF val)
+(REF val)           = val
 
 // Equality
-(EQL (Lam a.bod)       snd)               = (Lam λx(EQL (a.bod x) (APP snd x)))
-(EQL fst               (Lam b.bod))       = (Lam λx(EQL (APP fst x) (b.bod x)))
-(EQL (Bri a.bod)       snd)               = (Bri λx(EQL (a.bod x) (ANN x snd)))
-(EQL fst               (Bri b.bod))       = (Bri λx(EQL (ANN x fst) (b.bod x)))
-(EQL (App a.fun a.arg) (App b.fun b.arg)) = (APP (EQL a.fun b.fun) (EQL a.arg b.arg))
-(EQL (Ann a.val a.typ) b)                 = (EQL a.val b)
-(EQL a                 (Ann b.val v.typ)) = (EQL a b.val)
-(EQL (Var a.idx)       (Var b.idx))       = (If (== a.idx b.idx) (Var a.idx) (Eql (Var a.idx) (Var b.idx)))
-(EQL fst               snd)               = (Eql fst snd)
+// --------
+
+(Equal (Ref a.nam a.val) b                 dep) = (Equal a.val b dep)
+(Equal a                 (Ref b.nam b.val) dep) = (Equal a b.val dep)
+(Equal (Lam a.bod)       (Lam b.bod)       dep) = (Equal a.bod b.bod (+ dep 1))
+(Equal (Bri a.bod)       (Bri b.bod)       dep) = (Equal a.bod b.bod (+ dep 1))
+(Equal (Ann a.val a.typ) b                 dep) = (Equal a.val b dep)
+(Equal a                 (Ann b.val v.typ) dep) = (Equal a b.val dep)
+(Equal (App a.fun a.arg) (App b.fun b.arg) dep) = (& (Equal a.fun b.fun dep) (Equal a.arg b.arg dep))
+(Equal (Var a.idx)       (Var b.idx)       dep) = (== a.idx b.idx)
+(Equal Set               Set               dep) = 1
+(Equal (Lam a.bod)       b                 dep) = (Equal (Lam a.bod) (Lam (App b (Var dep))) dep)
+(Equal a                 (Lam b.bod)       dep) = (Equal (Lam (App a (Var dep))) (Lam b.bod) dep)
+(Equal a                 b                 dep) = 0
+
+// Quoting
+// -------
+
+(Quote (Ref a.nam a.val) dep) = (Ref a.nam (Quote a.val dep))
+(Quote (Lam a.bod)       dep) = (Lam (Quote (a.bod (Var dep)) (+ dep 1)))
+(Quote (App a.fun a.arg) dep) = (App (Quote a.fun dep) (Quote a.arg dep))
+(Quote (Bri a.bod)       dep) = (Bri (Quote (a.bod (Var dep)) (+ dep 1)))
+(Quote (Ann a.val a.typ) dep) = (Ann (Quote a.val dep) (Quote a.typ dep))
+(Quote (Var a.idx)       dep) = (Var a.idx)
+(Quote Set               dep) = Set
 
 // Checking
 // --------
 
-(Check (Lam bod)     dep) = (Check (bod (Var dep)) (+ dep 1))
-(Check (App fun arg) dep) = (& (Check fun dep) (Check arg dep))
-(Check (Bri bod)     dep) = (Check (bod (Var dep)) (+ dep 1))
-(Check (Ann val typ) dep) = (& (Check val dep) (Check typ dep)) 
-(Check (Eql fst snd) dep) = (Debug ["Mismatch " (Show fst dep) NewLine "      != " (Show snd dep)] 0)
-(Check (Var idx)     dep) = 1
+//(Check term) = (Debug ["Check: " (Show term dep)] (Checks term dep))
+(Check term dep) = (Checks term dep)
+
+(Checks (Lam bod)                       dep) = (Check bod (+ dep 1))
+(Checks (App (Ann fun.val fun.typ) arg) dep) = (Debug ["NonFunApp: " (Show (App (Ann fun.val fun.typ) arg) dep)] 0)
+(Checks (App Set                   arg) dep) = (Debug ["NonFunApp: " (Show (App Set arg) dep)] 0)
+(Checks (App fun                   arg) dep) = (& (Check fun dep) (Check arg dep))
+(Checks (Bri bod)                       dep) = (Check bod (+ dep 1))
+(Checks (Ann (Ann val.val val.typ) typ) dep) = (& (Valid val.typ typ dep) (Check val.val dep))
+(Checks (Ann (Lam val.bod)         typ) dep) = (Debug ["NonFunLam: " (Show (Ann (Lam val.bod) typ) dep)] 0)
+(Checks (Ann Set                   typ) dep) = (Debug ["NonKinSet: " (Show (Ann Set typ) dep)] 0)
+(Checks (Ann val                   typ) dep) = (Check val dep)
+(Checks (Ref nam val)                   dep) = 1
+(Checks (Var idx)                       dep) = 1
+(Checks Set                             dep) = 1
+
+(Valid inf exp dep) = (Report (Equal inf exp dep) inf exp dep)
+
+(Report 0 inf exp dep) = (Debug [NewLine "Mismatch: " (Show inf dep) NewLine "       != " (Show exp dep)] 0)
+(Report 1 inf exp dep) = 1
 
 // Stringification
 // ---------------
 
-(Show (Lam term.bod)          dep) = (Join ["λx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+(Show (Lam term.bod)          dep) = (Join ["λx" (U60.show dep) " " (Show term.bod (+ dep 1))])
 (Show (App term.fun term.arg) dep) = (Join ["(" (Show term.fun dep) " " (Show term.arg dep) ")"])
-(Show (Bri term.bod)          dep) = (Join ["θx" (U60.show dep) " " (Show (term.bod (Var dep)) (+ dep 1))])
+(Show (Bri term.bod)          dep) = (Join ["θx" (U60.show dep) " " (Show term.bod (+ dep 1))])
 (Show (Ann term.val term.typ) dep) = (Join ["{" (Show term.val dep) " : " (Show term.typ dep) "}"])
 (Show (Eql term.fst term.snd) dep) = (Join ["{" (Show term.fst dep) " = " (Show term.snd dep) "}"])
+(Show (Ref term.nam term.val) dep) = term.nam
 (Show (Var term.idx)          dep) = (Join ["x" (U60.show term.idx)])
+(Show Set                     dep) = "*"
 
 // Utils
 // -----
@@ -61,4 +98,4 @@
 (U60.show.go.match 0 n res)  = (U60.show.go (/ n 10) (String.cons (+ '0' (% n 10)) res))
 (U60.show.go.match i n res)  = (String.cons (+ '0' n) res)
 (Debug []  value)            = value
-(Debug msg value)            = (HVM.print (Join msg) value)
+(Debug msg value)            = (HVM.log (Join msg) value)

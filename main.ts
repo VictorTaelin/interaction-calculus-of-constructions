@@ -24,6 +24,7 @@ type Term =
   | { $: "Bri"; bod: (x:Term)=> Term }
   | { $: "Ann"; val: Term; typ: Term }
   | { $: "Var"; nam: number }
+  | { $: "Set"; }
   | { $: "Ref"; nam: string };
 
 // Constructors
@@ -33,6 +34,7 @@ export const App = (fun: Term, arg: Term): Term => ({ $: "App", fun, arg });
 export const Bri = (bod: (x:Term)=> Term): Term => ({ $: "Bri", bod });
 export const Ann = (val: Term, typ: Term): Term => ({ $: "Ann", val, typ });
 export const Var = (nam: number): Term => ({ $: "Var", nam });
+export const Set = (): Term => ({ $: "Set" });
 export const Ref = (nam: string): Term => ({ $: "Ref", nam });
 
 // Book
@@ -69,7 +71,8 @@ export const show = (term: Term, dep: number = 0): string => {
     case "App": return `(${show(term.fun, dep)} ${show(term.arg, dep)})`;
     case "Bri": return `θ${name(dep)} ${show(term.bod(Var(dep)), dep + 1)}`;
     case "Ann": return `{${show(term.val, dep)} : ${show(term.typ, dep)}}`;
-    case "Var": return term.nam === -1 ? "*" : name(term.nam);
+    case "Var": return name(term.nam);
+    case "Set": return `*`;
     case "Ref": return term.nam;
   }
 };
@@ -82,6 +85,7 @@ export const compile = (term: Term, dep: number = 0): string => {
     case "Bri": return `(Bri λ${name(dep)} ${compile(term.bod(Var(dep)), dep + 1)})`;
     case "Ann": return `(ANN ${compile(term.val, dep)} ${compile(term.typ, dep)})`;
     case "Var": return name(term.nam);
+    case "Set": return "(Set)";
     case "Ref": return "T_"+term.nam;
   }
 };
@@ -188,9 +192,9 @@ export function parse_term(code: string): [string, (ctx: Scope) => Term] {
     var [code, _  ] = parse_text(code, "}");
     return [code, ctx => Ann(val(ctx), typ(ctx))];
   }
-  // ANY: `*`
+  // SET: `*`
   if (code[0] === "*") {
-    return [code.slice(1), ctx => Ref("Any")];
+    return [code.slice(1), ctx => Set()];
   }
   // FUN: `!A -> B` -SUGAR
   if (code[0] === "!") {
@@ -296,11 +300,13 @@ export function main() {
   var main_hvm1 = "";
   switch (func) {
     case "check": {
-      main_hvm1 = "Main = (Check T_" + name + " 0)\n";
+      main_hvm1 = "Main = (Check (Quote T_" + name + " 0) 0)\n";
+      //main_hvm1 = "Main = (Check (REF T_" + name + ") 0)\n";
       break;
     }
     case "run": {
-      main_hvm1 = "Main = (Show T_" + name + " 0)\n";
+      main_hvm1 = "Main = (Show (Quote T_" + name + " 0) 0)\n";
+      //main_hvm1 = "Main = (Show (REF T_" + name + ") 0)\n";
       break;
     }
     default: {

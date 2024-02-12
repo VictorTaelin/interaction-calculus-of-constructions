@@ -1,0 +1,3 @@
+Nat.id
+: Π(x: Nat) Nat
+= λx x

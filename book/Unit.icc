@@ -1,4 +1,4 @@
 Unit
-= $self(P: *)
-  Π(a: (P atom))
+= $self(P: !Any -> *)
+  Π(a: (P λPλa(a)))
   (P self)

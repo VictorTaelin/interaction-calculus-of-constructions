@@ -1,35 +1,7 @@
-if
+foo
 : Π(b: Bool)
-  Π(P: !Any -> *)
-  Π(t: (P λPλtλf(t)))
-  Π(f: (P λPλtλf(f)))
-  (P b)
-= λb λP λt λf
-  (b P t f)
-
-
-
-//Kind.Term
-//: *
-//= $self
-  //∀(P: ∀(x: Kind.Term) *)
-  //∀(all:
-    //∀(nam: String)
-    //∀(inp: Kind.Term)
-    //∀(bod: ∀(x: Kind.Term) Kind.Term)
-    //(P (Kind.Term.all nam inp bod)))
-  //(P self)
-
-//Kind.Term.all
-//: ∀(nam: String)
-  //∀(inp: Kind.Term)
-  //∀(bod: ∀(x: Kind.Term) Kind.Term)
-  //Kind.Term
-//= λnam λinp λbod
-  //~λP λall
-  //(all nam inp bod)
-
-
+  Bool
+= λb b
 
 // Π(a: A) (B x)
 // ------------------------- λ1

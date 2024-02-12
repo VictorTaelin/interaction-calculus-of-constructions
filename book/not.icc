@@ -1,9 +1,6 @@
 // FIXME
 not
-: !Bool -> Bool
-= λb (b λp(Bool) false true)
-
-//λx0 λx1 λx2 λx3 {{
-  //((( (((x0 λx4 Bool) λx4 λx5 λx6 {{x6 : (x4 false)} : (x4 false)}) λx4 λx5 λx6 {{x5 : (x4 true)} : (x4 true)}) x1) {{x2 : (x1 true)} : (x1 true)}) {{x3 : (x1 false)} : (x1 false)})
-//: (x1                 (((x0 λx4 Bool) λx4 λx5 λx6 {{x6 : (x4 false)} : (x4 false)}) λx4 λx5 λx6 {{x5 : (x4 true)} : (x4 true)}))}
-//: (x1 λx4 λx5 λx6 {((((((x0 λx7 Bool) λx7 λx8 λx9 {{x9 : (x7 false)} : (x7 false)}) λx7 λx8 λx9 {{x8 : (x7 true)} : (x7 true)}) x4) {x5 : (x4 true)}) {x6 : (x4 false)}) : (x4 (((x0 λx7 Bool) λx7 λx8 λx9 {{x9 : (x7 false)} : (x7 false)}) λx7 λx8 λx9 {{x8 : (x7 true)} : (x7 true)}))})}
+: Π(x: Bool) Bool
+= λb (b λp(Bool)
+  false
+  true)

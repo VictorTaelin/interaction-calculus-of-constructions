@@ -1,4 +1,4 @@
-atom
+Unit.atom
 : Unit
 = λP λa
   a

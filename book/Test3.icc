@@ -3,4 +3,5 @@ Test3
   Π(a: P)
   Π(b: P)
   P
-= λP λa λb a
+= λP λa λb
+  a

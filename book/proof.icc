@@ -1,0 +1,3 @@
+proof
+: (Equal Bool true false)
+= (refl Bool true)
