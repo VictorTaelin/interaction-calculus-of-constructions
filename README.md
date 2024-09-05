@@ -22,7 +22,7 @@ via the conventional interaction combinator rules, the result is a process that
 is effectively equivalent to dependent type checking. Below are some encodings
 that emerge from this construction:
 
-```
+```c
 // Simple Function. Syntax: !A -> B
 Fun = λA λB θf λx {(f {x: A}): B}
 
