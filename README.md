@@ -62,3 +62,5 @@ term ::=
 ```
 
 > TODO: complete the README
+
+> see [this tweet](https://github.com/VictorTaelin/interaction-calculus-of-constructions) for more info
